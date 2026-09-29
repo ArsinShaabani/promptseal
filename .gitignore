@@ -32,3 +32,4 @@ marketing/
 
 # Release tooling (local only)
 scripts/create_release.ps1
+scripts/pypi_upload.ps1
