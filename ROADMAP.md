@@ -36,7 +36,7 @@ The one-command regression loop for individual developers.
 
 **Theme: stop hand-writing cases. Seal what your app *actually* does.**
 
-- [ ] `promptseal record` — local OpenAI-compatible reverse proxy that captures
+- [x] `promptseal record` — local OpenAI-compatible reverse proxy that captures
       real app traffic and turns it into draft cases (PII redaction built in)
 - [ ] Python SDK (`promptseal.capture`) for in-process recording
 - [ ] Official GitHub Action (`promptseal-action`) + PR delta comments

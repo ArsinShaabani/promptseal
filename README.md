@@ -2,6 +2,8 @@
 
 **Regression testing for prompts, agents, and models. Know what breaks *before* you switch.**
 
+🌍 **Read this in Persian (فارسی): [README.fa.md](README.fa.md)**
+
 You changed one word in your system prompt. Or swapped `gpt-4o` for that shiny new
 open-weights model. Did you just break your app? **Nobody knows — until your users do.**
 
@@ -73,6 +75,29 @@ promptseal run \
 ```
 
 `--json` output is available on `run` and `diff` for scripting and dashboards.
+
+## Record real traffic → draft cases automatically
+
+Hand-writing eval cases is the boring part. PromptSeal ships a **local recorder proxy**:
+point your app at it, use your app normally, and every request/response pair is captured
+locally (with automatic PII redaction) — then converted into draft eval cases.
+
+```bash
+# 1) Start the recorder (forwards to your real provider)
+promptseal record --upstream https://api.openai.com/v1
+
+# 2) Point your app at the proxy and use it normally
+export OPENAI_BASE_URL=http://127.0.0.1:8819/v1
+
+# 3) Stop with Ctrl+C, then convert captures into draft cases
+promptseal record --to-cases            # -> cases/recorded.yaml
+promptseal seal                         # seal current behavior as baseline
+```
+
+Captured prompts never leave your machine (except to the provider you already chose).
+Emails, card numbers and phone numbers are masked with `<EMAIL>` / `<CARD>` / `<PHONE>`
+unless you pass `--no-redact`. Streaming responses are rejected with a clear message
+(disable streaming for recorded requests).
 
 ## Guard your repo with CI
 
@@ -169,9 +194,10 @@ deserves to be a *one-command, zero-server* experience for every developer, not 
 ## Status & roadmap
 
 `v0.2` — core loop (`init`/`run`/`seal`/`diff`/`report`/`runs`/`ci`), 13 assertions,
-mock + OpenAI-compatible providers, **multi-model matrix comparison**, JSON output,
-HTML reports, GitHub Actions gate. See [ROADMAP.md](ROADMAP.md) for
-trace capture, agent-trace assertions, and the suite registry.
+mock + OpenAI-compatible providers, **multi-model matrix comparison**,
+**traffic recorder (`record`)**, JSON output, HTML reports, GitHub Actions gate.
+Bilingual docs: [English](README.md) | [فارسی](README.fa.md).
+See [ROADMAP.md](ROADMAP.md) for the full plan.
 
 ## Contributing
 
