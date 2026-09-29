@@ -29,3 +29,6 @@ Thumbs.db
 
 # Internal marketing drafts (kept local only)
 marketing/
+
+# Release tooling (local only)
+scripts/create_release.ps1
