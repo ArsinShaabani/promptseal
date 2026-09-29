@@ -1,0 +1,23 @@
+# Example: customer-support bot suite
+# Copy this folder into your project (or point --cases at it) and set a real provider.
+version: 1
+suite: support-bot
+cases_dir: cases
+
+defaults:
+  provider: openai:gpt-4o-mini   # change to your model under test
+  timeout_s: 60
+  judge:
+    provider: openai:gpt-4o      # a stronger (or cheaper) model can judge outputs
+
+providers:
+  openai:
+    base_url: https://api.openai.com/v1
+    api_key_env: OPENAI_API_KEY
+    pricing:
+      input_per_1k_usd: 0.00015
+      output_per_1k_usd: 0.0006
+
+ci:
+  min_pass_rate: 0.95
+  fail_on_regression: true

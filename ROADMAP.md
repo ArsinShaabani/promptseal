@@ -1,0 +1,102 @@
+# 🦭 PromptSeal — Product Roadmap
+
+> **Mission:** make LLM behavior regressions impossible to ship.
+> **Vision:** the default safety net under every prompt, agent, and model swap —
+> the way pytest is the default safety net under Python code.
+
+## North-star metrics
+
+| Metric | 3 months | 6 months | 12 months |
+|---|---|---|---|
+| GitHub stars | 1,000 | 5,000 | 15,000 |
+| PyPI downloads / month | 10k | 100k | 500k |
+| Teams gating CI on PromptSeal | 50 | 500 | 3,000 |
+| Community-contributed suites | 10 | 50 | 200 |
+
+---
+
+## Phase 0 — Core Loop ✅ (shipped in v0.1)
+
+The one-command regression loop for individual developers.
+
+- [x] `init` — scaffold `promptseal.yaml` + starter suite
+- [x] YAML case format with variables, system prompts, tags
+- [x] 10 built-in assertions (text, JSON, regex, judge, latency, cost, length)
+- [x] Providers: any OpenAI-compatible endpoint (OpenAI, OpenRouter, Ollama, vLLM)
+      + deterministic `mock` provider for offline demos/tests
+- [x] Baseline sealing (`run --save-baseline`) and `diff` (regression / improvement / stable)
+- [x] `ci` command: exit codes, GitHub step summaries, `min_pass_rate`
+- [x] Self-contained dark-theme HTML reports (no external assets)
+- [x] LLM-as-judge with configurable judge provider
+
+## Phase 1 — Capture Reality (v0.2–0.3, weeks 2–6)
+
+**Theme: stop hand-writing cases. Seal what your app *actually* does.**
+
+- [ ] `promptseal record` — local OpenAI-compatible reverse proxy that captures
+      real app traffic and turns it into draft cases (PII redaction built in)
+- [ ] Python SDK (`promptseal.capture`) for in-process recording
+- [ ] Multi-provider matrix runs: `promptseal run -p openai:gpt-4o -p ollama:llama3.1:8b`
+      → side-by-side scorecard + cost/pass-rate tradeoff chart
+- [ ] Official GitHub Action (`promptseal-action`) + PR delta comments
+- [ ] pytest plugin (`promptseal --pytest`) so evals live next to unit tests
+- [ ] Flaky-case detection (repeat N times, statistical pass threshold)
+- [ ] Docs site (mkdocs-material) + tutorial: "Seal your first suite in 5 minutes"
+
+**Exit criteria:** a developer can go from zero → CI-gated evals of *real traffic* in under 10 minutes.
+
+## Phase 2 — Agent-Native (v0.4–0.5, months 2–3)
+
+**Theme: evaluate what agents DO, not just what they say.**
+
+- [ ] Tool-call trace assertions: `tools_called: [...]`, `tools_not_called`, `call_order`,
+      argument schema checks on recorded agent traces
+- [ ] Multi-turn conversation cases (user/assistant/scripted-user simulation)
+- [ ] Adapters: LangChain/LangGraph callbacks, OpenAI Agents SDK, Claude Code hooks
+- [ ] `driftwatch` long-term view: local dashboard charting pass-rate/cost/latency
+      across every run over time (SQLite + static HTML, still no server)
+- [ ] Assertion plugins (entry-point based) + `promptseal doctor` self-check
+- [ ] Cost observability: per-case cost percentiles across providers
+
+## Phase 3 — Teams & Scale (v0.6–1.0, months 3–6)
+
+**Theme: from personal tool to team platform — still local-first, now multi-tenant.**
+
+- [ ] `promptseal server` (optional, self-hosted): web UI over shared run history,
+      team dashboards, drift alerts (Slack/Discord/email webhooks)
+- [ ] Suite inheritance for monorepos (`extends:`), org-wide shared baselines
+- [ ] Storage backends: S3 / GCS / git-LFS for run artifacts
+- [ ] RBAC via git provider permissions; audit log of every seal/diff
+- [ ] Scheduled shadow runs against production traffic samples
+- [ ] SOC2-friendly posture: no data egress, self-hosting guide, signed releases
+
+## Phase 4 — Ecosystem (months 6–12)
+
+**Theme: become the registry where the community shares behavior specs.**
+
+- [ ] Suite Registry: `promptseal install security-basics` — curated, versioned,
+      community suites (PII, jailbreak resistance, tone, JSON contracts)
+- [ ] "Sealed" badge for open-source projects that gate their LLM features on PromptSeal
+- [ ] TypeScript/JS SDK + MCP server ("ask my seal history")
+- [ ] Model leaderboard per vertical: community-voted suites scored across popular models
+- [ ] Enterprise: SSO, audit exports, on-prem runner
+
+---
+
+## Launch & distribution playbook
+
+1. **Assets first**: demo GIF (vhs/asciinema), landing page (GitHub Pages), docs site.
+2. **Launch week**: Show HN, r/LocalLLaMA + r/LLMDevs, X thread with the diff GIF,
+   dev.to deep-dive, Hacker Newsletter, Persian dev communities.
+3. **SEO**: own the phrases *prompt regression testing*, *LLM regression CI*,
+   *prompt drift* with comparison + tutorial content.
+4. **Distribution**: PRs to awesome-llm / awesome-ai-agents lists, integration
+   announcements with Ollama/OpenRouter communities, "Sealed" badge backlinks.
+5. **Cadence**: weekly changelogs, one deep-dive post per phase, every release ships a demo.
+
+## Non-goals
+
+- No hosted SaaS for your prompt data. (Self-hosted server only — your traces stay yours.)
+- No generic "AI platform" sprawl. We do regression testing; we do it perfectly.
+- No vendor-exclusive formats. YAML in, JSON out, OpenAI-compatible everywhere.
+
