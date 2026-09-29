@@ -73,14 +73,6 @@ def print_diff(diff: DiffReport) -> None:
     )
     console.print()
 
-    def row(case_id: str, base: CaseResult, cand: CaseResult) -> None:
-        table.add_row(
-            case_id,
-            f"[dim]{base.status}[/]",
-            f"[bold]{cand.status}[/]",
-            (cand.error or "")[:100],
-        )
-
     table = Table(show_header=True, header_style="bold", expand=False)
     table.add_column("Case", style="cyan", no_wrap=True)
     table.add_column("Baseline", justify="center")
@@ -175,8 +167,8 @@ def summary_markdown(run: Run, diff: DiffReport | None = None) -> str:
     lines = [
         "## 🦭 PromptSeal report",
         "",
-        f"| Metric | Value |",
-        f"|---|---|",
+        "| Metric | Value |",
+        "|---|---|",
         f"| Provider | `{run.meta.provider}:{run.meta.model}` |",
         f"| Pass rate | **{s.pass_rate * 100:.0f}%** ({s.passed}/{s.total}) |",
         f"| Latency | {s.total_latency_ms} ms |",

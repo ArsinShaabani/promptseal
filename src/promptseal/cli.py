@@ -10,15 +10,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-# Windows consoles (and CI logs) often default to a legacy code page (cp1252);
-# force UTF-8 so the seal and table glyphs never crash the CLI.
-for _stream in (sys.stdout, sys.stderr):
-    if _stream is not None and hasattr(_stream, "reconfigure"):
-        try:
-            _stream.reconfigure(encoding="utf-8", errors="replace")
-        except Exception:  # noqa: BLE001 — never let output config kill the CLI
-            pass
-
 import typer
 from rich.console import Console
 from rich.table import Table
@@ -31,6 +22,15 @@ from promptseal.diff import DiffReport, diff_runs
 from promptseal.init_templates import INIT_CASES, INIT_YAML
 from promptseal.models import Run
 from promptseal.runner import execute, execute_matrix
+
+# Windows consoles (and CI logs) often default to a legacy code page (cp1252);
+# force UTF-8 so the seal and table glyphs never crash the CLI.
+for _stream in (sys.stdout, sys.stderr):
+    if _stream is not None and hasattr(_stream, "reconfigure"):
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:  # noqa: BLE001 — never let output config kill the CLI
+            pass
 
 app = typer.Typer(
     name="promptseal",

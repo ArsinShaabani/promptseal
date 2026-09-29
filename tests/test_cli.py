@@ -1,7 +1,6 @@
 """End-to-end CLI tests using the offline mock provider."""
 
 import json
-import os
 from pathlib import Path
 
 from typer.testing import CliRunner
