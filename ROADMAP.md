@@ -89,9 +89,14 @@ The one-command regression loop for individual developers.
 
 ## Launch & distribution playbook
 
+> **Status: v0.2.0 is LIVE on PyPI** (2026-09-29) — `pip install promptseal` works globally.
+> GitHub Release published, Discussions enabled, bilingual tutorials shipped.
+
 1. **Assets first**: demo GIF (vhs/asciinema), landing page (GitHub Pages), docs site.
+   ✅ GIF shipped (`assets/demo.gif`); docs site pending.
 2. **Launch week**: Show HN, r/LocalLLaMA + r/LLMDevs, X thread with the diff GIF,
-   dev.to deep-dive, Hacker Newsletter, Persian dev communities.
+   dev.to deep-dive (feeds daily.dev), Persian dev communities. Drafts ready in
+   `marketing/posts/` (local).
 3. **SEO**: own the phrases *prompt regression testing*, *LLM regression CI*,
    *prompt drift* with comparison + tutorial content.
 4. **Distribution**: PRs to awesome-llm / awesome-ai-agents lists, integration

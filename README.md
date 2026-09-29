@@ -2,6 +2,11 @@
 
 ![PromptSeal demo](assets/demo.gif)
 
+[![PyPI](https://img.shields.io/pypi/v/promptseal?color=blue&logo=pypi)](https://pypi.org/project/promptseal/)
+[![CI](https://github.com/ArsinShaabani/promptseal/actions/workflows/ci.yml/badge.svg)](https://github.com/ArsinShaabani/promptseal/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://pypi.org/project/promptseal/)
+
 **Regression testing for prompts, agents, and models. Know what breaks *before* you switch.**
 
 🌍 **Read this in Persian (فارسی): [README.fa.md](README.fa.md)** ·

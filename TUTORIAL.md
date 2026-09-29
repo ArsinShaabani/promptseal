@@ -26,7 +26,7 @@
 
 ```bash
 pip install promptseal
-# or, before the PyPI release / latest main:
+# latest main (may be ahead of the release):
 pip install git+https://github.com/ArsinShaabani/promptseal.git
 # for development:
 git clone https://github.com/ArsinShaabani/promptseal && cd promptseal
