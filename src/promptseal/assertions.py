@@ -24,6 +24,9 @@ _SHORTHAND_KEYS = {
     "min_length",
     "max_length",
     "llm_judge",
+    "not_empty",
+    "starts_with",
+    "ends_with",
 }
 
 
@@ -78,6 +81,24 @@ def _regex(output: str, value: Any, ctx: CheckContext) -> tuple[bool, str]:
 def _equals(output: str, value: Any, ctx: CheckContext) -> tuple[bool, str]:
     ok = output.strip() == str(value).strip()
     return ok, "" if ok else f"expected exactly {value!r}"
+
+
+@check("not_empty")
+def _not_empty(output: str, value: Any, ctx: CheckContext) -> tuple[bool, str]:
+    ok = output.strip() != ""
+    return ok, "" if ok else "output is empty"
+
+
+@check("starts_with")
+def _starts_with(output: str, value: Any, ctx: CheckContext) -> tuple[bool, str]:
+    ok = output.strip().lower().startswith(str(value).strip().lower())
+    return ok, "" if ok else f"output does not start with {value!r}"
+
+
+@check("ends_with")
+def _ends_with(output: str, value: Any, ctx: CheckContext) -> tuple[bool, str]:
+    ok = output.strip().lower().endswith(str(value).strip().lower())
+    return ok, "" if ok else f"output does not end with {value!r}"
 
 
 @check("json_valid")

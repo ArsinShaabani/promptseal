@@ -1,5 +1,6 @@
 """End-to-end CLI tests using the offline mock provider."""
 
+import json
 import os
 from pathlib import Path
 
@@ -75,3 +76,51 @@ def test_report_command_generates_html(tmp_path, monkeypatch):
     content = Path("r.html").read_text(encoding="utf-8")
     assert "PromptSeal" in content
     assert "</html>" in content
+
+
+def test_seal_command_sets_baseline(tmp_path, monkeypatch):
+    _in_tmp(tmp_path, monkeypatch)
+    runner.invoke(app, ["init"])
+    result = runner.invoke(app, ["seal", "--provider", "mock:echo"])
+    assert result.exit_code == 0, result.output
+    assert "sealed" in result.output
+    from promptseal import storage
+
+    baseline_id = storage.load_baseline()
+    assert baseline_id is not None
+    assert "mock-echo" in baseline_id
+
+
+def test_matrix_comparison(tmp_path, monkeypatch):
+    _in_tmp(tmp_path, monkeypatch)
+    runner.invoke(app, ["init"])
+    result = runner.invoke(
+        app, ["run", "-p", "mock:echo", "-p", "mock:denier", "--html"]
+    )
+    assert result.exit_code == 0, result.output
+    assert "Recommended" in result.output
+    assert Path("promptseal-matrix.html").exists()
+    html = Path("promptseal-matrix.html").read_text(encoding="utf-8")
+    assert "model comparison" in html
+
+
+def test_run_json_output(tmp_path, monkeypatch):
+    _in_tmp(tmp_path, monkeypatch)
+    runner.invoke(app, ["init"])
+    result = runner.invoke(app, ["run", "--provider", "mock:echo", "--json"])
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["summary"]["total"] == 2
+    assert payload["meta"]["provider"] == "mock"
+
+
+def test_diff_json_output(tmp_path, monkeypatch):
+    _in_tmp(tmp_path, monkeypatch)
+    runner.invoke(app, ["init"])
+    runner.invoke(app, ["run", "--provider", "mock:echo", "--save-baseline"])
+    runner.invoke(app, ["run", "--provider", "mock:denier"])
+    result = runner.invoke(app, ["diff", "--json"])
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["verdict"] == "regression"
+    assert set(payload["regressions"]) == {"echo-greeting", "echo-content"}

@@ -72,3 +72,31 @@ def test_load_suites_from_dir(tmp_path):
     assert len(suites) == 1
     assert suites[0].name == "demo"
     assert suites[0].cases[0].id == "a"
+
+
+def test_execute_matrix(tmp_path):
+    from promptseal.runner import execute_matrix
+
+    cases_file = tmp_path / "cases" / "s.yaml"
+    cases_file.parent.mkdir()
+    cases_file.write_text(
+        yaml.safe_dump(
+            {
+                "suite": "demo",
+                "cases": [
+                    {"id": "a", "prompt": "p", "asserts": [{"contains": "Echo"}]},
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    config = AppConfig()
+    config.cases_dir = str(cases_file.parent)
+    runs = execute_matrix(config, ["mock:echo", "mock:denier"], cases_dir=cases_file.parent, root=tmp_path)
+    assert len(runs) == 2
+    assert runs[0].summary.pass_rate == 1.0
+    assert runs[1].summary.pass_rate == 0.0
+    # both runs persisted
+    from promptseal import storage
+
+    assert len(storage.list_runs(tmp_path)) == 2

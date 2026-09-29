@@ -28,6 +28,9 @@ The one-command regression loop for individual developers.
 - [x] `ci` command: exit codes, GitHub step summaries, `min_pass_rate`
 - [x] Self-contained dark-theme HTML reports (no external assets)
 - [x] LLM-as-judge with configurable judge provider
+- [x] Multi-model **matrix runs**: `run -p a -p b -p c` → scorecard + recommendation + HTML
+- [x] `seal` command (run + baseline in one), `--json` output on run/diff
+- [x] 13 built-in assertions (text, JSON, regex, shape, judge, latency, cost, length)
 
 ## Phase 1 — Capture Reality (v0.2–0.3, weeks 2–6)
 
@@ -36,8 +39,6 @@ The one-command regression loop for individual developers.
 - [ ] `promptseal record` — local OpenAI-compatible reverse proxy that captures
       real app traffic and turns it into draft cases (PII redaction built in)
 - [ ] Python SDK (`promptseal.capture`) for in-process recording
-- [ ] Multi-provider matrix runs: `promptseal run -p openai:gpt-4o -p ollama:llama3.1:8b`
-      → side-by-side scorecard + cost/pass-rate tradeoff chart
 - [ ] Official GitHub Action (`promptseal-action`) + PR delta comments
 - [ ] pytest plugin (`promptseal --pytest`) so evals live next to unit tests
 - [ ] Flaky-case detection (repeat N times, statistical pass threshold)

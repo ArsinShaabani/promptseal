@@ -186,3 +186,16 @@ def execute(
     run = run_cases(cases, suite_name=config.suite, provider=provider, judge_fn=judge_fn)
     storage.save_run(run, root)
     return run
+
+
+def execute_matrix(
+    config: AppConfig,
+    provider_specs: list[str],
+    cases_dir: Optional[Path] = None,
+    root: Optional[Path] = None,
+) -> list[Run]:
+    """Run the suite against several providers; returns runs in the given order."""
+    return [
+        execute(config, provider_spec=spec, cases_dir=cases_dir, root=root)
+        for spec in provider_specs
+    ]

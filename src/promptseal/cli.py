@@ -2,10 +2,22 @@
 
 from __future__ import annotations
 
+import json
 import os
+import sys
 import webbrowser
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
+
+# Windows consoles (and CI logs) often default to a legacy code page (cp1252);
+# force UTF-8 so the seal and table glyphs never crash the CLI.
+for _stream in (sys.stdout, sys.stderr):
+    if _stream is not None and hasattr(_stream, "reconfigure"):
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:  # noqa: BLE001 — never let output config kill the CLI
+            pass
 
 import typer
 from rich.console import Console
@@ -15,9 +27,10 @@ from promptseal import report as report_mod
 from promptseal import report_html, storage
 from promptseal._version import __version__
 from promptseal.config import find_config, load_config
-from promptseal.diff import diff_runs
+from promptseal.diff import DiffReport, diff_runs
 from promptseal.init_templates import INIT_CASES, INIT_YAML
-from promptseal.runner import execute
+from promptseal.models import Run
+from promptseal.runner import execute, execute_matrix
 
 app = typer.Typer(
     name="promptseal",
@@ -64,38 +77,124 @@ def init(force: bool = typer.Option(False, "--force", help="Overwrite existing f
     console.print("  [bold]promptseal ci[/]  — compare against baseline (CI mode)")
 
 
+def _run_single(
+    config,
+    provider_spec: str,
+    cases_dir: Optional[Path],
+    save_baseline: bool = False,
+    html: bool = False,
+    json_out: bool = False,
+    fail_on_failure: bool = True,
+) -> Run:
+    run_result = execute(config, provider_spec=provider_spec, cases_dir=cases_dir)
+    if json_out:
+        typer.echo(run_result.model_dump_json(indent=2))
+    else:
+        report_mod.print_run(run_result)
+        run_path = storage.runs_dir() / f"{run_result.meta.run_id}.json"
+        console.print(f"   saved: [dim]{run_path}[/dim]")
+        if html:
+            out = Path("promptseal-report.html")
+            out.write_text(report_html.render_html(run_result), encoding="utf-8")
+            console.print(f"   report: [cyan]{out.resolve()}[/cyan]")
+        if save_baseline:
+            storage.save_baseline(run_result.meta.run_id)
+            console.print(f"   [green]baseline sealed:[/] {run_result.meta.run_id}")
+    if fail_on_failure and run_result.summary.pass_rate < 1.0:
+        raise typer.Exit(1)
+    return run_result
+
+
 @app.command()
 def run(
-    provider: Optional[str] = typer.Option(None, "--provider", "-p", help="Provider spec, e.g. openai:gpt-4o"),
+    providers: Optional[list[str]] = typer.Option(
+        None, "--provider", "-p",
+        help="Provider spec, e.g. -p openai:gpt-4o. Repeat the flag to compare models side-by-side.",
+    ),
     cases_dir: Optional[Path] = typer.Option(None, "--cases", help="Cases directory override"),
     save_baseline: bool = typer.Option(False, "--save-baseline", help="Mark this run as the baseline"),
-    html: bool = typer.Option(False, "--html", help="Also write a self-contained HTML report"),
+    html: bool = typer.Option(False, "--html", help="Also write an HTML report"),
+    json_out: bool = typer.Option(False, "--json", help="Machine-readable JSON output"),
 ) -> None:
-    """Run the eval suite against a provider."""
+    """Run the eval suite against one provider — or compare several in a matrix."""
     config = _config()
+    specs = list(providers) if providers else [config.default_provider]
     try:
-        run_result = execute(config, provider_spec=provider, cases_dir=cases_dir)
+        if len(specs) == 1:
+            _run_single(config, specs[0], cases_dir, save_baseline, html, json_out)
+            return
+
+        runs = execute_matrix(config, specs, cases_dir=cases_dir)
+        if json_out:
+            typer.echo(json.dumps([json.loads(r.model_dump_json()) for r in runs], indent=2))
+        else:
+            report_mod.print_matrix(runs)
+            for r in runs:
+                console.print(f"   saved: [dim]{storage.runs_dir() / (r.meta.run_id + '.json')}[/dim]")
+        if html:
+            out = Path("promptseal-matrix.html")
+            stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            out.write_text(report_html.render_matrix_html(runs, generated_at=stamp), encoding="utf-8")
+            console.print(f"   report: [cyan]{out.resolve()}[/cyan]")
+        if save_baseline:
+            # In matrix mode the first listed provider is treated as the reference model.
+            storage.save_baseline(runs[0].meta.run_id)
+            console.print(f"   [green]baseline sealed:[/] {runs[0].meta.run_id}")
+    except typer.Exit:
+        raise
     except Exception as exc:  # noqa: BLE001
         console.print(f"[red]Run failed: {exc}[/]")
         raise typer.Exit(1)
-    report_mod.print_run(run_result)
-    run_path = storage.runs_dir() / f"{run_result.meta.run_id}.json"
-    console.print(f"   saved: [dim]{run_path}[/dim]")
-    if html:
-        out = Path("promptseal-report.html")
-        out.write_text(report_html.render_html(run_result), encoding="utf-8")
-        console.print(f"   report: [cyan]{out.resolve()}[/cyan]")
-    if save_baseline:
-        storage.save_baseline(run_result.meta.run_id)
-        console.print(f"   [green]baseline sealed:[/] {run_result.meta.run_id}")
-    if run_result.summary.pass_rate < 1.0:
+
+
+@app.command()
+def seal(
+    provider: Optional[str] = typer.Option(None, "--provider", "-p", help="Provider spec override"),
+    cases_dir: Optional[Path] = typer.Option(None, "--cases", help="Cases directory override"),
+    html: bool = typer.Option(False, "--html", help="Also write an HTML report"),
+) -> None:
+    """Run the suite and 🔒 seal the result as your baseline."""
+    config = _config()
+    try:
+        _run_single(
+            config,
+            provider or config.default_provider,
+            cases_dir,
+            save_baseline=True,
+            html=html,
+            json_out=False,
+            fail_on_failure=False,
+        )
+    except typer.Exit:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        console.print(f"[red]Run failed: {exc}[/]")
         raise typer.Exit(1)
+    console.print("[green]Behavior sealed. From now on, `promptseal ci` guards it.[/]")
+
+
+
+def _diff_to_dict(diff: DiffReport) -> dict:
+    return {
+        "baseline": diff.baseline_run_id,
+        "candidate": diff.candidate_run_id,
+        "baseline_pass_rate": diff.baseline_pass_rate,
+        "candidate_pass_rate": diff.candidate_pass_rate,
+        "verdict": diff.verdict,
+        "regressions": [cid for cid, _, _ in diff.regressions],
+        "improvements": [cid for cid, _, _ in diff.improvements],
+        "stable_pass": diff.stable_pass,
+        "stable_fail": diff.stable_fail,
+        "new_cases": diff.new_cases,
+        "missing_cases": diff.missing_cases,
+    }
 
 
 @app.command()
 def diff(
     base: str = typer.Argument("baseline", help="Baseline run ref (baseline | latest | run_id | path)"),
     cand: str = typer.Argument("latest", help="Candidate run ref"),
+    json_out: bool = typer.Option(False, "--json", help="Machine-readable JSON output"),
 ) -> None:
     """Compare two runs and show regressions/improvements."""
     try:
@@ -104,7 +203,11 @@ def diff(
     except FileNotFoundError as exc:
         console.print(f"[red]{exc}[/]")
         raise typer.Exit(1)
-    report_mod.print_diff(diff_runs(base_run, cand_run))
+    report = diff_runs(base_run, cand_run)
+    if json_out:
+        typer.echo(json.dumps(_diff_to_dict(report), indent=2))
+    else:
+        report_mod.print_diff(report)
 
 
 @app.command()

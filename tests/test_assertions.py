@@ -66,6 +66,20 @@ def test_length_checks():
     assert not run([{"max_length": 5}], "way too long")[0].passed
 
 
+def test_not_empty():
+    assert run([{"not_empty": True}], "  content  ")[0].passed
+    result = run([{"not_empty": True}], "   ")
+    assert not result[0].passed
+    assert "empty" in result[0].detail
+
+
+def test_starts_with_and_ends_with():
+    assert run([{"starts_with": "hello"}], "Hello there")[0].passed
+    assert not run([{"starts_with": "bye"}], "Hello there")[0].passed
+    assert run([{"ends_with": "!"}], "Nice job!")[0].passed
+    assert not run([{"ends_with": "?"}], "Nice job!")[0].passed
+
+
 def test_llm_judge_requires_judge():
     results = run([{"llm_judge": "be nice"}], "output")
     assert not results[0].passed

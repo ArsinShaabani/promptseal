@@ -29,7 +29,7 @@ pip install promptseal
 
 promptseal init                      # config + starter suite
 promptseal run                       # mock provider — passes offline
-promptseal run --save-baseline      # 🔒 seal current behavior
+promptseal seal                      # 🔒 seal current behavior as baseline
 promptseal run -p mock:denier       # simulate a model change...
 promptseal diff                      # ...and see exactly what broke
 ```
@@ -45,6 +45,34 @@ promptseal run -p openrouter:anthropic/claude-sonnet-4
 promptseal run -p ollama:llama3.1:8b
 promptseal report --open             # beautiful self-contained HTML report
 ```
+
+## Compare models side-by-side (the matrix)
+
+Which model should you actually use? Run the same suite against several providers
+and get a scorecard — pass rates, costs, latencies, and a recommendation:
+
+```bash
+promptseal run \
+  -p openai:gpt-4o \
+  -p openrouter:anthropic/claude-sonnet-4 \
+  -p ollama:llama3.1:8b \
+  --html                              # writes promptseal-matrix.html
+```
+
+```
+┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+┃ Case          ┃ openai:gpt-4o ┃ ollama:llama3.1 ┃
+┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+│ pii-guard     │      ✔        │        ✘        │
+│ refund-tone   │      ✔        │        ✔        │
+│ json-contract │      ✔        │        ✘        │
+├───────────────┼───────────────┼─────────────────┤
+│ pass rate     │    100% 🏆    │       66%       │
+└───────────────┴───────────────┴─────────────────┘
+🏆 Recommended: openai:gpt-4o (100% pass, $0.0031)
+```
+
+`--json` output is available on `run` and `diff` for scripting and dashboards.
 
 ## Guard your repo with CI
 
@@ -95,12 +123,13 @@ cases:
       - max_latency_s: 10
 ```
 
-### Built-in assertions
+### Built-in assertions (13)
 
 | Assertion | What it checks |
 |---|---|
 | `contains` / `not_contains` / `contains_any` | substring presence / absence |
 | `regex`, `equals` | pattern & exact match |
+| `starts_with`, `ends_with`, `not_empty` | output shape |
 | `json_valid` | output parses as JSON (tolerates code fences) |
 | `llm_judge` | a judge model scores the output against a criterion |
 | `max_latency_s`, `max_cost_usd` | performance & budget guardrails |
@@ -139,9 +168,10 @@ deserves to be a *one-command, zero-server* experience for every developer, not 
 
 ## Status & roadmap
 
-`v0.1` — core loop (init/run/diff/report/ci), 10 assertions, mock + OpenAI-compatible
-providers, HTML reports, GitHub Actions gate. See [ROADMAP.md](ROADMAP.md) for
-trace capture, agent-trace assertions, matrix mode, and the suite registry.
+`v0.2` — core loop (`init`/`run`/`seal`/`diff`/`report`/`runs`/`ci`), 13 assertions,
+mock + OpenAI-compatible providers, **multi-model matrix comparison**, JSON output,
+HTML reports, GitHub Actions gate. See [ROADMAP.md](ROADMAP.md) for
+trace capture, agent-trace assertions, and the suite registry.
 
 ## Contributing
 
