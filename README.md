@@ -1,8 +1,11 @@
 # 🦭 PromptSeal
 
+![PromptSeal demo](assets/demo.gif)
+
 **Regression testing for prompts, agents, and models. Know what breaks *before* you switch.**
 
-🌍 **Read this in Persian (فارسی): [README.fa.md](README.fa.md)**
+🌍 **Read this in Persian (فارسی): [README.fa.md](README.fa.md)** ·
+📚 **Full tutorial: [TUTORIAL.md](TUTORIAL.md) | [آموزش کامل فارسی](TUTORIAL.fa.md)**
 
 You changed one word in your system prompt. Or swapped `gpt-4o` for that shiny new
 open-weights model. Did you just break your app? **Nobody knows — until your users do.**

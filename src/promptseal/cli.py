@@ -340,9 +340,14 @@ def runs() -> None:
 @app.command()
 def ci(
     provider: Optional[str] = typer.Option(None, "--provider", "-p", help="Provider override"),
+    min_pass_rate: Optional[float] = typer.Option(
+        None, "--min-pass-rate", help="Override ci.min_pass_rate from config"
+    ),
 ) -> None:
     """CI mode: run, diff against baseline, write step summary, exit 1 on regression."""
     config = _config()
+    if min_pass_rate is not None:
+        config.ci.min_pass_rate = min_pass_rate
     try:
         run_result = execute(config, provider_spec=provider)
     except Exception as exc:  # noqa: BLE001

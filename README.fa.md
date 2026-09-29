@@ -1,8 +1,11 @@
 # 🦭 PromptSeal
 
+![دموی PromptSeal](assets/demo.gif)
+
 **تست رگرسیون برای پرامپت‌ها، عامل‌ها و مدل‌ها. قبل از اینکه عوض کنی، بفهم چی می‌شکنه.**
 
-🌍 **Read this in English: [README.md](README.md)**
+🌍 **Read this in English: [README.md](README.md)** ·
+📚 **آموزش کامل: [TUTORIAL.fa.md](TUTORIAL.fa.md) | [Tutorial in English](TUTORIAL.md)**
 
 یک کلمه تو system prompt عوض کردی؟ یا `gpt-4o` رو با اون مدل open-weights جدید تعویض کردی؟
 **اپت رو خراب کردی یا نه؟ هیچ‌کس نمی‌دونه — تا وقتی کاربرها بفهمن.**

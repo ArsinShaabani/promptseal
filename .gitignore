@@ -21,3 +21,8 @@ htmlcov/
 Thumbs.db
 .idea/
 .vscode/
+
+# Local secrets (never commit)
+.env
+.env.local
+.env.*.local
