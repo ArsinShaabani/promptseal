@@ -112,7 +112,7 @@ class _FlakyProvider:
         self.outputs = outputs
         self.calls = 0
 
-    def complete(self, system, prompt):
+    def complete(self, system=None, prompt="", *, messages=None, tools=None, tool_choice=None):
         text = self.outputs[self.calls % len(self.outputs)]
         self.calls += 1
         return Completion(
@@ -164,3 +164,25 @@ def test_single_attempt_has_no_attempt_fields():
     assert run.results[0].attempts is None
     assert run.results[0].passed_attempts is None
     assert run.meta.repeat == 1
+
+
+def test_execute_same_second_runs_do_not_collide(tmp_path):
+    from promptseal import storage
+    from promptseal.runner import execute
+
+    cases_file = tmp_path / "cases" / "s.yaml"
+    cases_file.parent.mkdir()
+    cases_file.write_text(
+        yaml.safe_dump(
+            {
+                "suite": "d",
+                "cases": [{"id": "a", "prompt": "p", "asserts": [{"contains": "Echo"}]}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    config = AppConfig()
+    r1 = execute(config, "mock:echo", root=tmp_path)
+    r2 = execute(config, "mock:echo", root=tmp_path)
+    assert r1.meta.run_id != r2.meta.run_id
+    assert len(storage.list_runs(tmp_path)) == 2

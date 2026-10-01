@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import json
 import os
 import time
 from dataclasses import dataclass
-from typing import Optional, Protocol
+from typing import Any, Optional, Protocol
 
 import httpx
 
@@ -23,26 +24,38 @@ class Completion:
     cost_usd: Optional[float]
     model: str
     provider: str
+    # Normalized OpenAI tool_calls (assistant message), when the model called tools.
+    tool_calls: Optional[list[dict[str, Any]]] = None
 
 
 class Provider(Protocol):
     name: str
     model: str
 
-    def complete(self, system: Optional[str], prompt: str) -> Completion: ...
+    def complete(
+        self,
+        system: Optional[str],
+        prompt: str,
+        *,
+        messages: Optional[list[dict[str, Any]]] = None,
+        tools: Optional[list[dict[str, Any]]] = None,
+        tool_choice: Optional[Any] = None,
+    ) -> Completion: ...
 
 
 class MockProvider:
     """Deterministic provider for demos, tests, and offline development.
 
     Modes:
-      echo    -> "Echo: <prompt>"
+      echo    -> "Echo: <prompt>" (or the last user message for multi-turn cases)
       upper   -> uppercase prompt
       denier  -> a polite refusal (useful to simulate failing cases)
       lorem   -> fixed filler text
+      tools   -> simulates an agent: calls get_weather(city="Paris") when the
+                 case declares `tools:` (empty text, tool_calls set)
     """
 
-    MODES = ("echo", "upper", "denier", "lorem")
+    MODES = ("echo", "upper", "denier", "lorem", "tools")
 
     def __init__(self, mode: str = "echo"):
         if mode not in self.MODES:
@@ -51,17 +64,57 @@ class MockProvider:
         self.name = "mock"
         self.model = f"mock-{mode}"
 
-    def complete(self, system: Optional[str], prompt: str) -> Completion:
+    def complete(
+        self,
+        system: Optional[str] = None,
+        prompt: str = "",
+        *,
+        messages: Optional[list[dict[str, Any]]] = None,
+        tools: Optional[list[dict[str, Any]]] = None,
+        tool_choice: Optional[Any] = None,
+    ) -> Completion:
         time.sleep(0.005)  # simulate a tiny latency so reports look real
+        if messages:
+            prompt = next(
+                (
+                    m["content"]
+                    for m in reversed(messages)
+                    if isinstance(m, dict)
+                    and m.get("role") == "user"
+                    and isinstance(m.get("content"), str)
+                ),
+                prompt,
+            )
+        text = ""
+        tool_calls: Optional[list[dict[str, Any]]] = None
         if self.mode == "echo":
             text = f"Echo: {prompt}"
         elif self.mode == "upper":
             text = prompt.upper()
         elif self.mode == "denier":
             text = "I'm sorry, I cannot help with that."
+        elif self.mode == "tools":
+            if tools:
+                tool_calls = [
+                    {
+                        "id": "call_1",
+                        "type": "function",
+                        "function": {
+                            "name": "get_weather",
+                            "arguments": json.dumps({"city": "Paris"}),
+                        },
+                    }
+                ]
         else:
             text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
-        return Completion(text=text, latency_ms=12, cost_usd=0.0, model=self.model, provider=self.name)
+        return Completion(
+            text=text,
+            latency_ms=12,
+            cost_usd=0.0,
+            model=self.model,
+            provider=self.name,
+            tool_calls=tool_calls,
+        )
 
 
 class OpenAICompatProvider:
@@ -95,17 +148,33 @@ class OpenAICompatProvider:
         out_price = self.pricing.get("output_per_1k_usd", 0.0)
         return (prompt_tokens * in_price + completion_tokens * out_price) / 1000.0
 
-    def complete(self, system: Optional[str], prompt: str) -> Completion:
-        messages = []
-        if system:
-            messages.append({"role": "system", "content": system})
-        messages.append({"role": "user", "content": prompt})
+    def complete(
+        self,
+        system: Optional[str] = None,
+        prompt: str = "",
+        *,
+        messages: Optional[list[dict[str, Any]]] = None,
+        tools: Optional[list[dict[str, Any]]] = None,
+        tool_choice: Optional[Any] = None,
+    ) -> Completion:
+        chat: list[dict[str, Any]] = (
+            list(messages)
+            if messages is not None
+            else (
+                ([{"role": "system", "content": system}] if system else [])
+                + [{"role": "user", "content": prompt}]
+            )
+        )
 
         headers = {"Content-Type": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
 
-        payload = {"model": self.model, "messages": messages}
+        payload: dict[str, Any] = {"model": self.model, "messages": chat}
+        if tools:
+            payload["tools"] = tools
+        if tool_choice is not None:
+            payload["tool_choice"] = tool_choice
         started = time.perf_counter()
         try:
             response = httpx.post(
@@ -124,8 +193,10 @@ class OpenAICompatProvider:
             )
         try:
             body = response.json()
-            text = body["choices"][0]["message"]["content"] or ""
-        except (KeyError, IndexError, ValueError) as exc:
+            message = body["choices"][0]["message"]
+            text = message.get("content") or ""
+            tool_calls = message.get("tool_calls") or None
+        except (KeyError, IndexError, ValueError, TypeError) as exc:
             raise ProviderError(f"{self.name}:{self.model} returned an unexpected body: {exc}") from exc
         return Completion(
             text=text,
@@ -133,6 +204,7 @@ class OpenAICompatProvider:
             cost_usd=self._estimate_cost(body.get("usage")),
             model=self.model,
             provider=self.name,
+            tool_calls=tool_calls,
         )
 
 

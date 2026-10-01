@@ -27,6 +27,10 @@ _SHORTHAND_KEYS = {
     "not_empty",
     "starts_with",
     "ends_with",
+    "tools_called",
+    "tools_not_called",
+    "call_order",
+    "tool_args",
 }
 
 
@@ -36,6 +40,8 @@ class CheckContext:
     cost_usd: Optional[float] = None
     judge_fn: Optional[JudgeFn] = None
     metadata: dict[str, Any] = field(default_factory=dict)
+    # Normalized tool_calls from the assistant message (agent traces).
+    tool_calls: Optional[list[dict[str, Any]]] = None
 
 
 _REGISTRY: dict[str, Callable[[str, Any, CheckContext], tuple[bool, str]]] = {}
@@ -49,6 +55,42 @@ def check(name: str):
         return fn
 
     return decorator
+
+
+_PLUGIN_GROUP = "promptseal.assertions"
+_loaded_plugins: list[str] = []
+
+
+def load_plugins() -> list[str]:
+    """Import assertion plugin packages (entry-point group `promptseal.assertions`).
+
+    A plugin is any installed package whose module imports promptseal and uses the
+    `@check` decorator. Idempotent and best-effort: a broken plugin is skipped,
+    never fatal. Returns the discovered plugin names.
+    """
+    global _loaded_plugins
+    if _loaded_plugins:
+        return list(_loaded_plugins)
+    import importlib.metadata
+
+    names: list[str] = []
+    try:
+        eps = importlib.metadata.entry_points()
+        group = (
+            eps.select(group=_PLUGIN_GROUP)
+            if hasattr(eps, "select")
+            else eps.get(_PLUGIN_GROUP, [])
+        )
+    except Exception:  # noqa: BLE001 — discovery must never crash the CLI
+        return []
+    for ep in group:
+        try:
+            ep.load()
+            names.append(ep.name)
+        except Exception:  # noqa: BLE001 — skip broken plugins
+            continue
+    _loaded_plugins = names
+    return list(names)
 
 
 @check("contains")
@@ -166,6 +208,86 @@ def _llm_judge(output: str, value: Any, ctx: CheckContext) -> tuple[bool, str]:
     if first_line.startswith("FAIL"):
         return False, answer.strip()
     return False, f"judge gave an unclear answer: {answer.strip()[:200]}"
+
+
+def _tool_names(ctx: CheckContext) -> list[str]:
+    names: list[str] = []
+    for tc in ctx.tool_calls or []:
+        fn = tc.get("function") if isinstance(tc, dict) else None
+        name = fn.get("name") if isinstance(fn, dict) else None
+        if name:
+            names.append(str(name))
+    return names
+
+
+@check("tools_called")
+def _tools_called(output: str, value: Any, ctx: CheckContext) -> tuple[bool, str]:
+    """Every listed tool must have been called (value: str or list of names)."""
+    required = [value] if isinstance(value, str) else list(value or [])
+    names = _tool_names(ctx)
+    missing = [t for t in required if t not in names]
+    ok = bool(required) and not missing
+    return ok, "" if ok else f"required tools not called: {missing} (called: {names or 'none'})"
+
+
+@check("tools_not_called")
+def _tools_not_called(output: str, value: Any, ctx: CheckContext) -> tuple[bool, str]:
+    """None of the listed tools may appear in the trace."""
+    forbidden = [value] if isinstance(value, str) else list(value or [])
+    names = _tool_names(ctx)
+    hits = [t for t in forbidden if t in names]
+    return not hits, "" if not hits else f"forbidden tool calls found: {hits}"
+
+
+@check("call_order")
+def _call_order(output: str, value: Any, ctx: CheckContext) -> tuple[bool, str]:
+    """The listed tools must appear in this relative order within the trace."""
+    expected = [str(v) for v in (value if isinstance(value, list) else [value])]
+    names = _tool_names(ctx)
+    pos = 0
+    for name in names:
+        if pos < len(expected) and name == expected[pos]:
+            pos += 1
+    ok = pos == len(expected)
+    return ok, "" if ok else f"expected call order {expected}, got trace {names or 'none'}"
+
+
+@check("tool_args")
+def _tool_args(output: str, value: Any, ctx: CheckContext) -> tuple[bool, str]:
+    """First call of each named tool must have these argument key/values.
+
+    Value shape: {tool_name: {arg: expected_value}} — provided keys are compared,
+    extra arguments are allowed.
+    """
+    expected_map = value if isinstance(value, dict) else {}
+    if not expected_map:
+        return False, "tool_args expects a mapping like {tool_name: {arg: expected}}"
+    calls_by_name: dict[str, dict] = {}
+    for tc in ctx.tool_calls or []:
+        fn = tc.get("function") if isinstance(tc, dict) else None
+        if isinstance(fn, dict) and fn.get("name"):
+            calls_by_name.setdefault(str(fn["name"]), tc)
+    problems: list[str] = []
+    for tool, expected_args in expected_map.items():
+        tc = calls_by_name.get(str(tool))
+        if tc is None:
+            problems.append(f"tool {tool!r} was not called")
+            continue
+        raw = ((tc.get("function") or {}).get("arguments")) or "{}"
+        try:
+            args = jsonlib.loads(raw) if isinstance(raw, str) else dict(raw)
+        except (ValueError, TypeError):
+            problems.append(f"tool {tool!r}: arguments are not valid JSON: {raw!r}")
+            continue
+        if not isinstance(args, dict):
+            problems.append(f"tool {tool!r}: arguments must be a JSON object")
+            continue
+        for key, want in (expected_args or {}).items():
+            got = args.get(key)
+            if got != want:
+                problems.append(f"tool {tool!r}: arg {key!r} = {got!r}, expected {want!r}")
+    ok = not problems
+    return ok, "" if ok else "; ".join(problems)
 
 
 def parse_asserts(raw_asserts: list[dict[str, Any]]) -> list[AssertSpec]:

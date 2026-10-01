@@ -31,6 +31,8 @@ baseline (gpt-4o): 100% ██████████  →  candidate (new mode
 - 📊 **Seal & diff** — freeze a baseline, then see exactly which cases regressed or improved
 - 🎲 **Flaky detection** — `--repeat N` runs each case N times; it passes only if ≥ threshold of attempts pass
 - 🧪 **pytest plugin** — evals live next to your unit tests: `pytest --promptseal`
+- 🤖 **Agent-native** — assert tool calls (`tools_called`, `call_order`, `tool_args`) and multi-turn `messages:` cases
+- 📈 **Driftwatch** — `promptseal driftwatch`: local HTML trend of pass-rate/cost/latency across runs
 - 🚦 **CI gate** — `promptseal ci` exits 1 on regressions and writes a GitHub step summary
 - 🕵️ **LLM-as-judge** built in, **offline mock provider** for zero-key demos
 - 📦 **Local-first** — plain JSON runs, no server, no account, no telemetry
@@ -164,9 +166,18 @@ cases:
     asserts:
       - json_valid: true
       - max_latency_s: 10
+
+  - id: weather-agent
+    prompt: "What's the weather in Paris?"
+    tools:
+      - type: function
+        function: {name: get_weather, parameters: {}}
+    asserts:
+      - tools_called: get_weather
+      - tool_args: {get_weather: {city: Paris}}
 ```
 
-### Built-in assertions (14)
+### Built-in assertions (18)
 
 | Assertion | What it checks |
 |---|---|
@@ -175,10 +186,14 @@ cases:
 | `starts_with`, `ends_with`, `not_empty` | output shape |
 | `json_valid` | output parses as JSON (tolerates code fences) |
 | `llm_judge` | a judge model scores the output against a criterion |
+| `tools_called` / `tools_not_called` | required / forbidden tool calls in the agent trace |
+| `call_order` | tools fired in this relative order |
+| `tool_args` | a tool call's arguments match expected key/values |
 | `max_latency_s`, `max_cost_usd` | performance & budget guardrails |
 | `min_length`, `max_length` | output size bounds |
 
-Custom checks are one decorated Python function (see `src/promptseal/assertions.py`).
+Custom checks are one decorated Python function (see `src/promptseal/assertions.py`) —
+and ship as plugins via the `promptseal.assertions` entry-point group (`promptseal doctor` lists them).
 
 ## Why not X?
 
@@ -211,12 +226,15 @@ deserves to be a *one-command, zero-server* experience for every developer, not 
 
 ## Status & roadmap
 
-`v0.3` — core loop (`init`/`run`/`seal`/`diff`/`report`/`runs`/`ci`), 14 assertions,
+`v0.4` — core loop (`init`/`run`/`seal`/`diff`/`report`/`runs`/`ci`), 18 assertions,
 mock + OpenAI-compatible providers, **multi-model matrix comparison**,
 **traffic recorder (`record`)**, JSON output, HTML reports, GitHub Actions gate,
 **committed self-contained baselines**, **flaky detection (`--repeat`)**, the
-**`promptseal.capture` SDK**, a **pytest plugin (`pytest --promptseal`)** and a
-**mkdocs-material docs site** (`docs/`, auto-deployed to GitHub Pages).
+**`promptseal.capture` SDK**, a **pytest plugin (`pytest --promptseal`)**,
+**agent-native cases** (`tools:` + `messages:`), **`promptseal driftwatch`** and
+**`promptseal doctor`**.
+Bilingual docs: [English](README.md) | [فارسی](README.fa.md).
+See [ROADMAP.md](ROADMAP.md) for the full plan.
 Bilingual docs: [English](README.md) | [فارسی](README.fa.md).
 See [ROADMAP.md](ROADMAP.md) for the full plan.
 

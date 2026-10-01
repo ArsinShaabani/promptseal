@@ -20,6 +20,8 @@
 | `promptseal record --to-cases` | Convert captures into draft cases |
 | `promptseal ci` | CI gate: exit 1 on regression, write step summary |
 | `pytest --promptseal` | Run eval suites as pytest tests, next to unit tests |
+| `promptseal driftwatch` | Local HTML trend of pass-rate/cost/latency over runs |
+| `promptseal doctor` | Self-check: config, providers, registry, storage |
 | `promptseal version` | Show version |
 
 ---
@@ -305,7 +307,7 @@ def _mentions_ticket(output: str, value, ctx) -> tuple[bool, str]:
 ```
 
 Use it in YAML: `- mentions_ticket: 1234`. See `src/promptseal/assertions.py`
-for the 14 built-ins as templates.
+for the 18 built-ins as templates.
 
 ## Part 10 — Run evals inside pytest
 
@@ -323,7 +325,64 @@ pytest --promptseal --ps-provider ollama:llama3.1:8b
 - The plugin registers automatically via a `pytest11` entry point once promptseal
   is installed.
 
-## Part 11 — Troubleshooting
+## Part 11 — Test agent behavior: tool calls & multi-turn
+
+Agents act — PromptSeal asserts on **what they did**, not just what they said.
+Cases can declare OpenAI tool schemas (`tools:`) and inspect the returned
+`tool_calls` trace, or send a full chat history via `messages:`:
+
+```yaml
+# cases/agent.yaml
+suite: agent
+cases:
+  - id: weather-tool
+    prompt: "What's the weather in Paris?"
+    tools:
+      - type: function
+        function: {name: get_weather, parameters: {}}
+    asserts:
+      - tools_called: get_weather                 # the tool fired
+      - tool_args: {get_weather: {city: Paris}}   # with the right arguments
+      - tools_not_called: book_flight             # and nothing it shouldn't
+
+  - id: support-continuation
+    messages:                                     # multi-turn conversation in,
+      - role: system                              # takes precedence over prompt:
+        content: "You are a support agent."
+      - role: user
+        content: "Where is my order?"
+      - role: assistant
+        content: "Which email is the order under?"
+      - role: user
+        content: "ana@example.com"
+    asserts:
+      - contains_any: ["ORD-", "order"]
+      - max_latency_s: 10
+```
+
+Assertion reference: `tools_called` (a name or list — every listed tool must
+fire), `tools_not_called`, `call_order` (relative order must hold), `tool_args`
+(argument key/values of the first call of each tool). Works with any
+OpenAI-compatible tool-calling endpoint. Offline, `mock:tools` simulates an
+agent that calls `get_weather(city="Paris")` whenever `tools:` are declared.
+
+## Part 12 — Watch the drift: driftwatch & doctor
+
+```bash
+promptseal driftwatch --open       # pass-rate/cost/latency trends per model
+promptseal doctor                  # config, providers, registry, storage self-check
+```
+
+`driftwatch` renders a self-contained `promptseal-drift.html` from your
+`.promptseal/runs/` history — a per provider:model sparkline plus a run table.
+No server, works offline. `doctor` verifies the environment before you trust a
+seal: config found, default & judge providers resolvable (API keys present),
+assertion registry (built-ins + plugins), storage writable — exit 1 on real
+problems, warnings for soft ones. Third-party assertion plugins are any
+packages exposing the `promptseal.assertions` entry-point group; they register
+with the same `@check` decorator and appear in `doctor`.
+
+## Part 13 — Troubleshooting
 
 | Symptom | Fix |
 |---|---|
@@ -335,6 +394,7 @@ pytest --promptseal --ps-provider ollama:llama3.1:8b
 | Judge assertions all fail | Set `defaults.judge.provider` in config |
 | Windows console shows mojibake | Already handled — CLI forces UTF-8; use Windows Terminal for best colors |
 | `Plugin already registered` | Drop `-p promptseal.pytest_plugin` — the plugin auto-registers |
+| `tool 'x' was not called` | Declare `tools:` on the case; make sure the model supports tool-calling |
 
 ---
 

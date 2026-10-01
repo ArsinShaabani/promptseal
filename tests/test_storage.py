@@ -61,3 +61,13 @@ def test_corrupt_baseline_json_is_tolerated(tmp_path):
     (tmp_path / ".promptseal" / "baseline.json").write_text("{not json", encoding="utf-8")
     assert storage.load_baseline(tmp_path) is None
     assert storage.load_baseline_run(tmp_path) is None
+
+
+def test_unique_run_id_suffixes_on_collision(tmp_path):
+    first = _run("dup")
+    storage.save_run(first, tmp_path)
+    second = _run("dup")
+    second.meta.run_id = storage.unique_run_id("dup", root=tmp_path)
+    assert second.meta.run_id == "dup-2"
+    storage.save_run(second, tmp_path)
+    assert len(storage.list_runs(tmp_path)) == 2

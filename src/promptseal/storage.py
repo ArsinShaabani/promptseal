@@ -90,6 +90,20 @@ def load_baseline_run(root: Path | None = None) -> Run | None:
         return None
 
 
+def unique_run_id(run_id: str, root: Path | None = None) -> str:
+    """Return run_id suffixed -2/-3/... if a run file with that id already exists.
+
+    Run ids embed second granularity, so two same-second runs (same provider)
+    would otherwise silently overwrite each other's JSON files.
+    """
+    base = run_id
+    n = 2
+    while (runs_dir(root) / f"{run_id}.json").exists():
+        run_id = f"{base}-{n}"
+        n += 1
+    return run_id
+
+
 def resolve_run(ref: str, root: Path | None = None) -> tuple[Run, Path]:
     """Resolve 'latest', 'baseline', a run_id (or prefix), or a path to a run file."""
     p = Path(ref)

@@ -13,6 +13,7 @@ from pathlib import Path
 
 import pytest
 
+from promptseal import assertions
 from promptseal._version import __version__
 from promptseal.config import AppConfig, find_config, load_config
 from promptseal.models import Case, CaseResult, Run, RunMeta, RunSummary
@@ -43,6 +44,7 @@ def pytest_addoption(parser) -> None:
 def pytest_configure(config) -> None:
     config.addinivalue_line("markers", "promptseal: PromptSeal eval case")
     if getattr(config.option, "promptseal", False):
+        assertions.load_plugins()
         cfg: AppConfig = load_config(find_config())
         spec = config.option.ps_provider or cfg.default_provider
         try:
@@ -137,6 +139,7 @@ def _persist_run(config) -> None:
         f"{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}-pytest-"
         f"{provider.name}-{provider.model}".replace("/", "-").replace(":", "-")
     )
+    run_id = storage.unique_run_id(run_id)
     run = Run(
         meta=RunMeta(
             run_id=run_id,

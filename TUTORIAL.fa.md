@@ -21,6 +21,8 @@
 | `promptseal record --to-cases` | تبدیل کپچرها به کیس پیش‌نویس |
 | `promptseal ci` | گیت CI: رگرسیون → exit 1 + خلاصه‌ی PR |
 | `pytest --promptseal` | اجرای سوییت‌های eval به‌عنوان تست pytest، کنار تست‌های unit |
+| `promptseal driftwatch` | روند pass-rate/هزینه/تأخیر در HTML لوکال |
+| `promptseal doctor` | سلف‌چک: کانفیگ، provider ها، رجیستری، storage |
 | `promptseal version` | نمایش نسخه |
 
 ---
@@ -303,7 +305,7 @@ def _mentions_ticket(output: str, value, ctx) -> tuple[bool, str]:
     return ok, "" if ok else f"no BUG-{value} ticket reference found"
 ```
 
-استفاده در YAML: `- mentions_ticket: 1234`. برای الگو، ۱۴ مورد داخلی رو ببین:
+استفاده در YAML: `- mentions_ticket: 1234`. برای الگو، ۱۸ مورد داخلی رو ببین:
 `src/promptseal/assertions.py`.
 
 ## بخش ۱۰ — اجرای eval ها داخل pytest
@@ -321,7 +323,64 @@ pytest --promptseal --ps-provider ollama:llama3.1:8b
   `promptseal runs` میاد و مثل هر ران دیگه‌ای می‌تونی `seal`/`diff` بگیری.
 - پلاگین با نصب promptseal از طریق entry-point ی `pytest11` خودکار ثبت می‌شه.
 
-## بخش ۱۱ — عیب‌یابی
+## بخش ۱۱ — تست رفتار ایجنت: tool-call و چندنوبته
+
+ایجنت‌ها *عمل* می‌کنن — PromptSeal روی **کاری که کردن** assertion می‌ذاره، نه فقط
+چیزی که گفتن. کیس‌ها می‌تونن اسکیمای tool های OpenAI رو با `tools:` تعریف کنن و
+روی `tool_calls` برگشتی assertion بذارن؛ یا با `messages:` کل گفتگو رو بفرستن:
+
+```yaml
+# cases/agent.yaml
+suite: agent
+cases:
+  - id: weather-tool
+    prompt: "هوای پاریس چطوره؟"
+    tools:
+      - type: function
+        function: {name: get_weather, parameters: {}}
+    asserts:
+      - tools_called: get_weather                 # ابزار صدا زده شده
+      - tool_args: {get_weather: {city: Paris}}   # با آرگومان درست
+      - tools_not_called: book_flight             # و چیزی که نباید، نشده
+
+  - id: support-continuation
+    messages:                                     # گفتگوی چندنوبته — از prompt
+      - role: system                              # هم‌ارزی می‌گیره — با رندر
+        content: "تو یک اپراتور پشتیبانی هستی."   # {{vars}}
+      - role: user
+        content: "سفارشم کجاست؟"
+      - role: assistant
+        content: "تحت چه ایمیلی سفارش داده‌اید؟"
+      - role: user
+        content: "ana@example.com"
+    asserts:
+      - contains_any: ["ORD-", "سفارش"]
+      - max_latency_s: 10
+```
+
+مرجع assertion ها: `tools_called` (یک نام یا لیست — همه باید فراخوانی بشن)،
+`tools_not_called`، `call_order` (ترتیب نسبی)، `tool_args` (کلید/مقدار آرگومان‌های
+اولین فراخوانی هر ابزار). با هر endpoint سازگار با OpenAI که tool-calling داره کار
+می‌کنه. آفلاین، `mock:tools` ایجنتی رو شبیه‌سازی می‌کنه که هر وقت `tools:` تعریف
+شده باشه، `get_weather(city="Paris")` رو صدا می‌زنه.
+
+## بخش ۱۲ — دیدن drift: driftwatch و doctor
+
+```bash
+promptseal driftwatch --open       # روند pass-rate/هزینه/تأخیر برای هر مدل
+promptseal doctor                  # سلف‌چک کانفیگ، provider ها، رجیستری، storage
+```
+
+دستور `driftwatch` یک `promptseal-drift.html` کاملاً مستقل از تاریخچه‌ی
+`.promptseal/runs/` می‌سازه — برای هر provider:model یک sparkline به‌علاوه‌ی جدول
+ران‌ها. بدون سرور، کاملاً آفلاین. دستور `doctor` هم قبل از اعتماد به یک seal،
+محیط رو چک می‌کنه: کانفیگ پیدا شده؟ provider پیش‌فرض و judge قابل ساخت هستن (کلید
+API موجود)؟ رجیستری assertion (داخلی + پلاگین)؟ storage قابل نوشتن؟ — روی مشکلات
+واقعی exit 1 می‌ده و برای موارد نرم فقط هشدار می‌ده. پلاگین‌های assertion شخص
+سوم هر پکیجی هستن که گروه entry-point ی `promptseal.assertions` رو expose کنن؛
+با همون دکوراتور `@check` ثبت می‌شن و توی `doctor` دیده می‌شن.
+
+## بخش ۱۳ — عیب‌یابی
 
 | علامت | راه‌حل |
 |---|---|
@@ -333,6 +392,7 @@ pytest --promptseal --ps-provider ollama:llama3.1:8b
 | assertion های judge همه fail می‌شن | `defaults.judge.provider` رو توی کانفیگ ست کن |
 | کنسول ویندوز به‌هم‌ریخته نشون می‌ده | CLI خودش UTF-8 رو force می‌کنه؛ برای رنگ بهتر Windows Terminal |
 | `Plugin already registered` | `-p promptseal.pytest_plugin` رو حذف کن — پلاگین خودکار ثبته |
+| `tool 'x' was not called` | ‏`tools:` رو روی کیس تعریف کن و مطمئن شو مدل tool-calling ساپورت می‌کنه |
 
 ---
 

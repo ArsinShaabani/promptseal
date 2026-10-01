@@ -27,15 +27,20 @@ class AssertResult(BaseModel):
 
 
 class Case(BaseModel):
-    """One eval case: a prompt plus the assertions that define 'correct'."""
+    """One eval case: a prompt (or multi-turn messages) plus assertions."""
 
     id: str
-    prompt: str
+    prompt: str = ""
     system: Optional[str] = None
     description: Optional[str] = None
     vars: dict[str, Any] = Field(default_factory=dict)
     asserts: list[AssertSpec] = Field(default_factory=list)
     tags: list[str] = Field(default_factory=list)
+    # Multi-turn input: full chat history sent as-is; takes precedence over prompt.
+    messages: Optional[list[dict[str, Any]]] = None
+    # Agent traces: OpenAI tool schemas forwarded to the provider.
+    tools: Optional[list[dict[str, Any]]] = None
+    tool_choice: Optional[Any] = None
 
 
 class Suite(BaseModel):
@@ -60,6 +65,8 @@ class CaseResult(BaseModel):
     # Present when the case ran with repeat > 1 (flaky detection).
     attempts: Optional[int] = None
     passed_attempts: Optional[int] = None
+    # Normalized tool_calls from the assistant message (agent traces).
+    tool_calls: Optional[list[dict[str, Any]]] = None
 
 
 class RunSummary(BaseModel):

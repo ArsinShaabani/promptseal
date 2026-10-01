@@ -53,6 +53,13 @@ def print_run(run: Run) -> None:
                 if not a.passed and a.detail:
                     piece += f" [dim]({a.detail})[/]"
                 parts.append(piece)
+            if r.tool_calls:
+                names = ", ".join(
+                    (tc.get("function") or {}).get("name", "?")
+                    for tc in r.tool_calls
+                    if isinstance(tc, dict)
+                )
+                parts.append(f"[magenta]🔧 tools: {names}[/]")
             checks = "\n".join(parts) if parts else "[dim]smoke (no asserts)[/]"
         table.add_row(r.case_id, status_text, f"{r.latency_ms}ms", checks)
     console.print(table)

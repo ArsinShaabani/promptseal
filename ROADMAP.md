@@ -30,7 +30,7 @@ The one-command regression loop for individual developers.
 - [x] LLM-as-judge with configurable judge provider
 - [x] Multi-model **matrix runs**: `run -p a -p b -p c` → scorecard + recommendation + HTML
 - [x] `seal` command (run + baseline in one), `--json` output on run/diff
-- [x] 14 built-in assertions (text, JSON, regex, shape, judge, latency, cost, length)
+- [x] 18 built-in assertions (text, JSON, regex, shape, judge, latency, cost, length, agent tools)
 
 ## Phase 1 — Capture Reality (v0.2–0.3, weeks 2–6)
 
@@ -57,13 +57,16 @@ The one-command regression loop for individual developers.
 
 **Theme: evaluate what agents DO, not just what they say.**
 
-- [ ] Tool-call trace assertions: `tools_called: [...]`, `tools_not_called`, `call_order`,
-      argument schema checks on recorded agent traces
-- [ ] Multi-turn conversation cases (user/assistant/scripted-user simulation)
+- [x] Tool-call trace assertions — `tools_called` / `tools_not_called` / `call_order` /
+      `tool_args` on any OpenAI-compatible tool-calling model (`mock:tools` offline) — v0.4
+- [x] Multi-turn conversation cases — case-level `messages:` chat history with
+      `{{vars}}` rendering (scripted-user simulation still open) — v0.4
 - [ ] Adapters: LangChain/LangGraph callbacks, OpenAI Agents SDK, Claude Code hooks
-- [ ] `driftwatch` long-term view: local dashboard charting pass-rate/cost/latency
-      across every run over time (SQLite + static HTML, still no server)
-- [ ] Assertion plugins (entry-point based) + `promptseal doctor` self-check
+- [x] `driftwatch` long-term view — `promptseal driftwatch`: self-contained HTML
+      dashboard charting pass-rate/cost/latency across every saved run (reads
+      `.promptseal/runs` JSON — boring storage beats SQLite) — v0.4
+- [x] Assertion plugins (entry-point group `promptseal.assertions`) + `promptseal
+      doctor` self-check (config / providers / judge / registry / storage) — v0.4
 - [ ] Cost observability: per-case cost percentiles across providers
 
 ## Phase 3 — Teams & Scale (v0.6–1.0, months 3–6)
@@ -97,6 +100,8 @@ The one-command regression loop for individual developers.
 > GitHub Release published, Discussions enabled, bilingual tutorials shipped.
 > v0.3.0: committed self-contained baselines, flaky-repeat runs, `promptseal.capture`
 > SDK, pytest plugin (`pytest --promptseal`), mkdocs-material docs site.
+> v0.4.0: agent tool-call assertions + multi-turn cases, `promptseal driftwatch`,
+> assertion plugins + `promptseal doctor`, run-id collision fix.
 
 1. **Assets first**: demo GIF (vhs/asciinema), landing page (GitHub Pages), docs site.
    ✅ GIF shipped (`assets/demo.gif`) · ✅ docs site shipped (`docs/`, mkdocs-material,

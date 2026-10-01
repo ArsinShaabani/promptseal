@@ -15,6 +15,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from promptseal import assertions, driftwatch as driftwatch_mod
 from promptseal import record as record_mod
 from promptseal import report as report_mod
 from promptseal import report_html, storage
@@ -23,6 +24,7 @@ from promptseal.config import find_config, load_config
 from promptseal.diff import DiffReport, diff_runs
 from promptseal.init_templates import INIT_CASES, INIT_YAML
 from promptseal.models import Run
+from promptseal.providers import ProviderError, get_provider
 from promptseal.runner import execute, execute_matrix
 
 # Windows consoles (and CI logs) often default to a legacy code page (cp1252);
@@ -42,6 +44,12 @@ app = typer.Typer(
     pretty_exceptions_show_locals=False,
 )
 console = Console()
+
+
+@app.callback()
+def _root() -> None:
+    """Load third-party assertion plugins (entry-point group promptseal.assertions)."""
+    assertions.load_plugins()
 
 
 def _config():
@@ -369,6 +377,81 @@ def runs() -> None:
             r.meta.created_at[:19].replace("T", " "),
         )
     console.print(table)
+
+
+@app.command()
+def driftwatch(
+    out: Path = typer.Option(Path("promptseal-drift.html"), "--out", help="Output HTML path"),
+    open_browser: bool = typer.Option(False, "--open", help="Open the dashboard in a browser"),
+) -> None:
+    """Local drift dashboard: pass-rate/cost/latency trends over all saved runs."""
+    runs = storage.list_runs()
+    if not runs:
+        console.print("[red]No runs found — run `promptseal run` first.[/]")
+        raise typer.Exit(1)
+    stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    out.write_text(driftwatch_mod.render_html(runs, generated_at=stamp), encoding="utf-8")
+    console.print(f"🦭 drift dashboard: [cyan]{out.resolve()}[/cyan] ({len(runs)} runs)")
+    if open_browser:
+        webbrowser.open(out.resolve().as_uri())
+
+
+@app.command()
+def doctor() -> None:
+    """Self-check: config, providers, judge, assertion registry, storage."""
+    failures = 0
+    rows: list[tuple[str, str, str]] = []
+
+    def record(name: str, ok: bool, detail: str = "", warn: bool = False) -> None:
+        nonlocal failures
+        if not ok and not warn:
+            failures += 1
+        rows.append((name, "✔" if ok else ("⚠" if warn else "✘"), detail))
+
+    record("promptseal", True, f"v{__version__}")
+    path = find_config()
+    if path:
+        record("config", True, str(path))
+        cfg = load_config(path)
+    else:
+        record("config", False, "promptseal.yaml not found — defaults in use", warn=True)
+        cfg = load_config()
+    try:
+        provider = get_provider(cfg.default_provider, cfg)
+        record("default provider", True, f"{provider.name}:{provider.model} resolvable")
+    except ProviderError as exc:
+        record("default provider", False, str(exc))
+    if cfg.judge.provider:
+        try:
+            judge = get_provider(cfg.judge.provider, cfg)
+            record("judge provider", True, f"{judge.name}:{judge.model}")
+        except ProviderError as exc:
+            record("judge provider", False, str(exc))
+    else:
+        record("judge provider", True, "not set — defaults to the run provider")
+    plugins = assertions.load_plugins()
+    registry_detail = f"{len(assertions.available_checks())} checks registered"
+    if plugins:
+        registry_detail += f" · plugins: {', '.join(plugins)}"
+    record("assertion registry", True, registry_detail)
+    try:
+        storage.runs_dir().mkdir(parents=True, exist_ok=True)
+        record("storage", True, str(storage.runs_dir()))
+    except OSError as exc:
+        record("storage", False, str(exc))
+
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("Check", style="cyan")
+    table.add_column("Status", justify="center")
+    table.add_column("Detail", overflow="fold")
+    colors = {"✔": "green", "⚠": "yellow", "✘": "red"}
+    for name, status, detail in rows:
+        table.add_row(name, f"[{colors[status]}]{status}[/]", detail)
+    console.print(table)
+    if failures:
+        console.print(f"[red]🦭 {failures} problem(s) found.[/]")
+        raise typer.Exit(1)
+    console.print("[green]🦭 All checks passed.[/]")
 
 
 @app.command()

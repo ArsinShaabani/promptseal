@@ -26,6 +26,8 @@ PromptSeal ثبت می‌کنه که پرامپت‌ها *باید* چطور ر�
 - 🎥 **ضبط ترافیک واقعی** — پراکسی لوکال یا SDK ی `promptseal.capture` ترافیک اپت رو می‌گیره و خودش کیس می‌سازه
 - 🎲 **تشخیص flaky** — `--repeat N` هر کیس رو N بار اجرا می‌کنه؛ پاس فقط با آستانه‌ی آماری از تلاش‌ها
 - 🧪 **پلاگین pytest** — eval ها کنار تست‌های unit: ‏`pytest --promptseal`
+- 🤖 **Agent-native** — assertion روی tool-call ها (`tools_called`، `call_order`، `tool_args`) و کیس‌های چندنوبته با `messages:`
+- 📈 **Driftwatch** — ‏`promptseal driftwatch`: روند pass-rate/هزینه/تأخیر در یک HTML لوکال
 - 📦 **Local-first** — ران‌ها فایل JSON ساده‌ان؛ بدون سرور، بدون اکانت، بدون تلمتری
 
 ## شروع سریع (۳۰ ثانیه، بدون API key)
@@ -141,9 +143,18 @@ cases:
     asserts:
       - json_valid: true
       - max_latency_s: 10
+
+  - id: weather-agent
+    prompt: "هوای پاریس چطوره؟"
+    tools:
+      - type: function
+        function: {name: get_weather, parameters: {}}
+    asserts:
+      - tools_called: get_weather
+      - tool_args: {get_weather: {city: Paris}}
 ```
 
-### assertion های داخلی (۱۴)
+### assertion های داخلی (۱۸)
 
 | assertion | چی رو چک می‌کنه |
 |---|---|
@@ -152,10 +163,15 @@ cases:
 | `starts_with`، `ends_with`، `not_empty` | شکل خروجی |
 | `json_valid` | خروجی JSON معتبره (با تحمل code fence) |
 | `llm_judge` | یک مدل داور خروجی رو نسبت به معیار امتیاز می‌ده |
+| `tools_called` / `tools_not_called` | tool-call های الزامی / ممنوع در ردپای ایجنت |
+| `call_order` | ترتیب نسبی فراخوانی ابزارها |
+| `tool_args` | آرگومان‌های tool-call با کلید/مقدارهای موردانتظار |
 | `max_latency_s`، `max_cost_usd` | محدودکننده‌ی کارایی و بودجه |
 | `min_length`، `max_length` | محدوده‌ی اندازه‌ی خروجی |
 
-چک سفارشی فقط یک تابع پایتون با دکوراتوره (ببین `src/promptseal/assertions.py`).
+چک سفارشی فقط یک تابع پایتون با دکوراتوره (ببین `src/promptseal/assertions.py`) — و
+به‌صورت پلاگین هم قابل انتشار با گروه entry-point ی `promptseal.assertions` است
+(`promptseal doctor` لیستشون رو نشون می‌ده).
 
 ## چرا نه X؟
 
@@ -191,11 +207,12 @@ cases:
 
 ## وضعیت و نقشه‌راه
 
-`v0.3` — حلقه‌ی اصلی (`init`/`run`/`seal`/`diff`/`report`/`runs`/`ci`)، ۱۴ assertion،
+`v0.4` — حلقه‌ی اصلی (`init`/`run`/`seal`/`diff`/`report`/`runs`/`ci`)، ۱۸ assertion،
 provider های ماک + سازگار با OpenAI، **مقایسه‌ی ماتریسی چندمدلی**، ضبط ترافیک
 (`record`)، خروجی JSON، گزارش HTML و گیت GitHub Actions + **baseline های commit شدنی
 و مستقل**، **تشخیص flaky با `--repeat`**، **SDK ی `promptseal.capture`**،
-**پلاگین pytest (`pytest --promptseal`)** و **سایت مستندات mkdocs**.
+**پلاگین pytest (`pytest --promptseal`)**، **کیس‌های agent-native** (`tools:` و
+`messages:`)، **`promptseal driftwatch`** و **`promptseal doctor`**.
 نقشه‌راه کامل: [ROADMAP.md](ROADMAP.md)
 
 ## مشارکت

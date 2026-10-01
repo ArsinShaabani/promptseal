@@ -24,19 +24,22 @@ def load_suite_file(path: Path) -> Suite:
     raw_cases = raw.get("cases") or []
     cases: list[Case] = []
     for i, rc in enumerate(raw_cases):
-        if not isinstance(rc, dict) or "id" not in rc or "prompt" not in rc:
+        if not isinstance(rc, dict) or "id" not in rc or ("prompt" not in rc and "messages" not in rc):
             raise ValueError(
-                f"{path.name}: case #{i + 1} must be a mapping with at least 'id' and 'prompt'"
+                f"{path.name}: case #{i + 1} must be a mapping with 'id' and 'prompt' or 'messages'"
             )
         cases.append(
             Case(
                 id=str(rc["id"]),
-                prompt=str(rc["prompt"]),
+                prompt=str(rc.get("prompt") or ""),
                 system=rc.get("system"),
                 description=rc.get("description"),
                 vars=rc.get("vars", {}) or {},
                 asserts=parse_asserts(rc.get("asserts") or []),
                 tags=rc.get("tags", []) or [],
+                messages=rc.get("messages"),
+                tools=rc.get("tools"),
+                tool_choice=rc.get("tool_choice"),
             )
         )
     return Suite(
@@ -88,10 +91,27 @@ def _judge_fn(judge_provider: Provider) -> JudgeFn:
 
 def _run_case_once(case: Case, provider: Provider, judge_fn: Optional[JudgeFn]) -> CaseResult:
     """One attempt of a single case."""
-    prompt = _render(case.prompt, case.vars)
-    system = _render(case.system, case.vars) if case.system else None
     try:
-        completion = provider.complete(system, prompt)
+        if case.messages is not None:
+            chat = []
+            for m in case.messages:
+                if not isinstance(m, dict):
+                    continue
+                item = dict(m)
+                if isinstance(item.get("content"), str):
+                    item["content"] = _render(item["content"], case.vars)
+                chat.append(item)
+            completion = provider.complete(
+                messages=chat, tools=case.tools, tool_choice=case.tool_choice
+            )
+        else:
+            system = _render(case.system, case.vars) if case.system else None
+            completion = provider.complete(
+                system,
+                _render(case.prompt, case.vars),
+                tools=case.tools,
+                tool_choice=case.tool_choice,
+            )
     except ProviderError as exc:
         return CaseResult(case_id=case.id, status="error", error=str(exc))
 
@@ -99,6 +119,7 @@ def _run_case_once(case: Case, provider: Provider, judge_fn: Optional[JudgeFn]) 
         latency_ms=completion.latency_ms,
         cost_usd=completion.cost_usd,
         judge_fn=judge_fn,
+        tool_calls=completion.tool_calls,
     )
     assertion_results = run_asserts(case.asserts, completion.text, ctx)
     failed = [a for a in assertion_results if not a.passed]
@@ -110,6 +131,7 @@ def _run_case_once(case: Case, provider: Provider, judge_fn: Optional[JudgeFn]) 
         latency_ms=completion.latency_ms,
         cost_usd=completion.cost_usd,
         assertion_results=assertion_results,
+        tool_calls=completion.tool_calls,
     )
 
 
@@ -241,6 +263,7 @@ def execute(
         repeat=rep,
         flaky_pass_rate=rate,
     )
+    run.meta.run_id = storage.unique_run_id(run.meta.run_id, root)
     storage.save_run(run, root)
     return run
 
