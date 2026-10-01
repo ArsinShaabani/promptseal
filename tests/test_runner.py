@@ -5,7 +5,7 @@ import yaml
 from promptseal.config import AppConfig
 from promptseal.runner import run_cases
 from promptseal.models import Case
-from promptseal.providers import get_provider
+from promptseal.providers import Completion, get_provider
 
 
 def _case(cid, prompt, asserts):
@@ -100,3 +100,67 @@ def test_execute_matrix(tmp_path):
     from promptseal import storage
 
     assert len(storage.list_runs(tmp_path)) == 2
+
+
+class _FlakyProvider:
+    """Cycles through canned outputs; satisfies the Provider protocol."""
+
+    name = "flaky"
+    model = "flaky-1"
+
+    def __init__(self, outputs):
+        self.outputs = outputs
+        self.calls = 0
+
+    def complete(self, system, prompt):
+        text = self.outputs[self.calls % len(self.outputs)]
+        self.calls += 1
+        return Completion(
+            text=text, latency_ms=10, cost_usd=0.0, model=self.model, provider=self.name
+        )
+
+
+def test_repeat_aggregates_attempts():
+    provider = _FlakyProvider(["Echo: ok", "nope", "Echo: ok", "nope"])
+    cases = [_case("c", "hello", _specs([{"contains": "Echo"}]))]
+    run = run_cases(cases, "t", provider, repeat=4, flaky_pass_rate=0.5)
+    r = run.results[0]
+    assert r.attempts == 4
+    assert r.passed_attempts == 2
+    assert r.status == "pass"
+    assert run.meta.repeat == 4
+    assert run.meta.flaky_pass_rate == 0.5
+
+
+def test_repeat_fails_below_threshold():
+    provider = _FlakyProvider(["Echo: ok", "nope", "nope"])
+    cases = [_case("c", "hello", _specs([{"contains": "Echo"}]))]
+    run = run_cases(cases, "t", provider, repeat=3, flaky_pass_rate=0.8)
+    r = run.results[0]
+    assert r.passed_attempts == 1
+    assert r.attempts == 3
+    assert r.status == "fail"
+    # The representative attempt is a failing one, so details explain the failure:
+    assert not r.assertion_results[0].passed
+
+
+def test_repeat_all_errors_status_error():
+    from promptseal.providers import OpenAICompatProvider
+
+    provider = OpenAICompatProvider(
+        name="broken", model="m", base_url="http://127.0.0.1:1", timeout_s=1
+    )
+    cases = [_case("c", "hi", _specs([{"contains": "x"}]))]
+    run = run_cases(cases, "t", provider, repeat=2)
+    r = run.results[0]
+    assert r.status == "error"
+    assert r.attempts == 2
+    assert r.passed_attempts == 0
+
+
+def test_single_attempt_has_no_attempt_fields():
+    provider = get_provider("mock:echo", AppConfig())
+    run = run_cases([_case("c", "hi", _specs([{"contains": "Echo"}]))], "t", provider)
+    assert run.results[0].attempts is None
+    assert run.results[0].passed_attempts is None
+    assert run.meta.repeat == 1

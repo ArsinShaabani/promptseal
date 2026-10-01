@@ -57,6 +57,9 @@ class CaseResult(BaseModel):
     cost_usd: Optional[float] = None
     assertion_results: list[AssertResult] = Field(default_factory=list)
     error: Optional[str] = None
+    # Present when the case ran with repeat > 1 (flaky detection).
+    attempts: Optional[int] = None
+    passed_attempts: Optional[int] = None
 
 
 class RunSummary(BaseModel):
@@ -78,6 +81,9 @@ class RunMeta(BaseModel):
     suite: str
     git_commit: Optional[str] = None
     promptseal_version: str = __version__
+    # Flaky detection settings recorded with the run (repeat > 1 = repeated runs).
+    repeat: int = 1
+    flaky_pass_rate: float = 1.0
 
 
 class Run(BaseModel):

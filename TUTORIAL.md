@@ -1,7 +1,7 @@
 # 🦭 PromptSeal — The Complete Tutorial
 
 > Everything you need to go from zero to "my LLM behavior is guarded in CI".
-> Last updated: v0.2. This tutorial is kept in sync with every release.
+> Last updated: v0.3. This tutorial is kept in sync with every release.
 
 **Commands cheat sheet**
 
@@ -11,6 +11,7 @@
 | `promptseal run` | Run all cases against a provider |
 | `promptseal run -p openai:gpt-4o` | Run against a specific provider |
 | `promptseal run -p a -p b --html` | Matrix: compare models side-by-side |
+| `promptseal run --repeat 5` | Flaky detection: each case runs 5 times |
 | `promptseal seal` | Run once and seal the result as baseline |
 | `promptseal diff` | Compare baseline vs latest, classify every case |
 | `promptseal report --open` | Generate & open a self-contained HTML report |
@@ -18,6 +19,7 @@
 | `promptseal record` | Start the local traffic recorder proxy |
 | `promptseal record --to-cases` | Convert captures into draft cases |
 | `promptseal ci` | CI gate: exit 1 on regression, write step summary |
+| `pytest --promptseal` | Run eval suites as pytest tests, next to unit tests |
 | `promptseal version` | Show version |
 
 ---
@@ -148,6 +150,27 @@ defaults:
     provider: openai:gpt-4o-mini   # cheap model as judge
 ```
 
+### Flaky detection — repeat cases N times
+
+LLM outputs are non-deterministic: a case that passes 4 times out of 5 is usually
+fine; one that passes 1 time out of 5 is broken. Make that explicit:
+
+```bash
+promptseal run --repeat 5                        # every attempt must pass (threshold 1.0)
+promptseal run --repeat 5 --flaky-pass-rate 0.8  # pass if ≥ 4 of 5 attempts pass
+```
+
+Or set it once in `promptseal.yaml`:
+
+```yaml
+defaults:
+  repeat: 5
+  flaky_pass_rate: 0.8
+```
+
+Runs store the attempts per case (`"attempts": 5, "passed_attempts": 4`), and the
+terminal report shows them next to the status, e.g. `FAIL (2/5)`.
+
 
 ## Part 5 — Record real traffic (stop hand-writing cases)
 
@@ -176,6 +199,26 @@ Options: `--no-redact` (not recommended), `--port`, `--max N`, `--max-latency 10
 
 Note: streaming requests (`"stream": true`) are rejected with a clear message —
 disable streaming for the requests you want captured.
+
+### In-process capture (SDK, no proxy)
+
+Don't want a proxy? Capture straight from your code, in the same JSONL format:
+
+```python
+import os
+from promptseal.capture import CaptureClient
+
+client = CaptureClient(
+    base_url="https://api.openai.com/v1",
+    api_key=os.environ["OPENAI_API_KEY"],
+    model="gpt-4o-mini",
+    capture_path=".promptseal/captures/app.jsonl",
+)
+reply = client.ask("Summarize this ticket for the support team.")
+```
+
+`promptseal record --to-cases` picks up SDK captures alongside proxy captures and
+turns everything into draft cases.
 
 ## Part 6 — Compare models before you commit to one
 
@@ -224,10 +267,12 @@ jobs:
 3. Writes a markdown report to `$GITHUB_STEP_SUMMARY` (visible in the PR).
 4. **Exits 1** if any case regressed or pass rate < `ci.min_pass_rate`.
 
-**Baseline strategy:** commit baseline decisions into your release flow — after
-merging a change you've reviewed, re-run `promptseal seal` locally on `main` and
-store the new baseline run id (e.g. in `.promptseal/baseline.json`, committed, or in
-CI artifacts). Or relax gates with `--min-pass-rate 0.95` for experimental suites.
+**Baseline strategy:** commit your baseline. `promptseal seal` writes
+`.promptseal/baseline.json` — a small self-contained snapshot of the whole baseline
+run. It's git-whitelisted (everything else under `.promptseal/` stays ignored), so
+after sealing on `main` just `git add .promptseal/baseline.json` and CI gates every
+PR against it with no extra wiring. Relax gates with `--min-pass-rate 0.95` for
+experimental suites.
 
 ```bash
 promptseal ci --min-pass-rate 0.95     # tolerate small drift, block real regressions
@@ -260,9 +305,25 @@ def _mentions_ticket(output: str, value, ctx) -> tuple[bool, str]:
 ```
 
 Use it in YAML: `- mentions_ticket: 1234`. See `src/promptseal/assertions.py`
-for the 13 built-ins as templates.
+for the 14 built-ins as templates.
 
-## Part 10 — Troubleshooting
+## Part 10 — Run evals inside pytest
+
+Keep evals next to your unit tests — same command, same report:
+
+```bash
+pytest --promptseal                       # collects cases/*.yaml as tests
+pytest --promptseal --ps-provider ollama:llama3.1:8b
+```
+
+- Opt-in: without the flag, pytest ignores your suites completely.
+- One pytest test per case; failures show the exact assertion details.
+- The whole session is saved as a PromptSeal run (`suite: pytest`), so it shows
+  up in `promptseal runs` and you can `promptseal seal` / `diff` it like any run.
+- The plugin registers automatically via a `pytest11` entry point once promptseal
+  is installed.
+
+## Part 11 — Troubleshooting
 
 | Symptom | Fix |
 |---|---|
@@ -273,6 +334,7 @@ for the 13 built-ins as templates.
 | `unknown provider 'x'` | Add it under `providers:` in `promptseal.yaml` (or use `mock:`) |
 | Judge assertions all fail | Set `defaults.judge.provider` in config |
 | Windows console shows mojibake | Already handled — CLI forces UTF-8; use Windows Terminal for best colors |
+| `Plugin already registered` | Drop `-p promptseal.pytest_plugin` — the plugin auto-registers |
 
 ---
 

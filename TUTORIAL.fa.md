@@ -1,7 +1,7 @@
 # 🦭 PromptSeal — آموزش کامل (فارسی)
 
 > هر چیزی که لازم داری تا از صفر برسی به «رفتار LLM من توی CI محافظت می‌شه».
-> آخرین به‌روزرسانی: v0.2 — این آموزش با هر نسخه همگام می‌شه.
+> آخرین به‌روزرسانی: v0.3 — این آموزش با هر نسخه همگام می‌شه.
 > نسخه‌ی انگلیسی: [TUTORIAL.md](TUTORIAL.md)
 
 **چیت‌شیت دستورها**
@@ -12,6 +12,7 @@
 | `promptseal run` | اجرای همه‌ی کیس‌ها روی provider پیش‌فرض |
 | `promptseal run -p openai:gpt-4o` | اجرا روی provider مشخص |
 | `promptseal run -p a -p b --html` | ماتریس: مقایسه‌ی مدل‌ها کنار هم |
+| `promptseal run --repeat 5` | تشخیص flaky: هر کیس ۵ بار اجرا می‌شه |
 | `promptseal seal` | یک اجرا + قفل نتیجه به‌عنوان baseline |
 | `promptseal diff` | مقایسه‌ی baseline با آخرین اجرا |
 | `promptseal report --open` | گزارش HTML مستقل و باز شدن مرورگر |
@@ -19,6 +20,7 @@
 | `promptseal record` | روشن‌کردن پراکسی ضبط ترافیک لوکال |
 | `promptseal record --to-cases` | تبدیل کپچرها به کیس پیش‌نویس |
 | `promptseal ci` | گیت CI: رگرسیون → exit 1 + خلاصه‌ی PR |
+| `pytest --promptseal` | اجرای سوییت‌های eval به‌عنوان تست pytest، کنار تست‌های unit |
 | `promptseal version` | نمایش نسخه |
 
 ---
@@ -150,6 +152,28 @@ defaults:
     provider: openai:gpt-4o-mini   # مدل ارزون به‌عنوان داور
 ```
 
+### تشخیص flaky — تکرار کیس‌ها N بار
+
+خروجی LLM غیرقطعیه: کیسی که ۴ بار از ۵ پاس می‌شه معمولاً اوکیه؛ کیسی که ۱ بار از ۵
+پاس می‌شه خرابه. این رو صریح کن:
+
+```bash
+promptseal run --repeat 5                        # همه‌ی تلاش‌ها باید پاس بشن (آستانه 1.0)
+promptseal run --repeat 5 --flaky-pass-rate 0.8  # پاس اگر ≥ ۴ از ۵ تلاش پاس بشه
+```
+
+یا یک بار توی `promptseal.yaml` ستش کن:
+
+```yaml
+defaults:
+  repeat: 5
+  flaky_pass_rate: 0.8
+```
+
+ران‌ها تعداد تلاش هر کیس رو ذخیره می‌کنن (`"attempts": 5, "passed_attempts": 4`) و
+گزارش ترمینال کنار وضعیت نشونش می‌ده، مثل `FAIL (2/5)`.
+
+
 ## بخش ۵ — ضبط ترافیک واقعی (نوشتن دستی کیس ممنوع)
 
 ضبط‌کننده یک پراکسی reverse لوکال بین اپ تو و provider است:
@@ -177,6 +201,26 @@ promptseal record --to-cases       # -> cases/recorded.yaml
 
 توجه: درخواست‌های استریم (`"stream": true`) با پیام شفاف رد می‌شن — برای ضبط،
 streaming رو خاموش کن.
+
+### ضبط در-پروسس (SDK، بدون پراکسی)
+
+پراکسی نمی‌خوای؟ مستقیم از کدت ضبط کن — با همون فرمت JSONL:
+
+```python
+import os
+from promptseal.capture import CaptureClient
+
+client = CaptureClient(
+    base_url="https://api.openai.com/v1",
+    api_key=os.environ["OPENAI_API_KEY"],
+    model="gpt-4o-mini",
+    capture_path=".promptseal/captures/app.jsonl",
+)
+reply = client.ask("این تیکت رو برای تیم پشتیبانی خلاصه کن.")
+```
+
+بعدش `promptseal record --to-cases` کپچرهای SDK رو هم مثل کپچرهای پراکسی برمی‌داره
+و همه رو به کیس پیش‌نویس تبدیل می‌کنه.
 
 ## بخش ۶ — قبل از انتخاب مدل، مدل‌ها رو مقایسه کن
 
@@ -224,9 +268,12 @@ jobs:
 3. گزارش markdown رو توی `$GITHUB_STEP_SUMMARY` می‌نویسه (تو PR دیده می‌شه).
 4. اگر کیسی رگرسیون شده باشه یا نرخ پاس کمتر از `ci.min_pass_rate` باشه **exit 1** می‌ده.
 
-**استراتژی baseline:** بعد از مرج‌شدن تغییری که بررسی کردی، دوباره `promptseal seal`
-رو روی `main` بزن و baseline جدید رو ثبت کن. یا برای سوییت‌های آزمایشی با
-`--min-pass-rate 0.95` گیت رو نرم‌تر کن.
+**استراتژی baseline:** baseline رو commit کن. دستور `promptseal seal` فایل
+`.promptseal/baseline.json` رو می‌نویسه — یک snapshot کوچک و مستقل از کل ران baseline.
+این فایل توی git سفید‌لیست شده (بقیه‌ی `.promptseal/` نادیده می‌مونه)، پس بعد از seal
+روی `main` فقط `git add .promptseal/baseline.json` بزن و CI هر PR رو نسبت به همون
+می‌سنجه — بدون هیچ wire اضافه‌ای. برای سوییت‌های آزمایشی هم با `--min-pass-rate 0.95`
+گیت رو نرم‌تر کن.
 
 ```bash
 promptseal ci --min-pass-rate 0.95     # drift جزئی رو تحمل کن، رگرسیون واقعی رو بلاک کن
@@ -256,10 +303,25 @@ def _mentions_ticket(output: str, value, ctx) -> tuple[bool, str]:
     return ok, "" if ok else f"no BUG-{value} ticket reference found"
 ```
 
-استفاده در YAML: `- mentions_ticket: 1234`. برای الگو، ۱۳ مورد داخلی رو ببین:
+استفاده در YAML: `- mentions_ticket: 1234`. برای الگو، ۱۴ مورد داخلی رو ببین:
 `src/promptseal/assertions.py`.
 
-## بخش ۱۰ — عیب‌یابی
+## بخش ۱۰ — اجرای eval ها داخل pytest
+
+eval ها رو کنار تست‌های unit نگه دار — همون دستور، همون گزارش:
+
+```bash
+pytest --promptseal                       # فایل‌های cases/*.yaml به‌عنوان test جمع می‌شن
+pytest --promptseal --ps-provider ollama:llama3.1:8b
+```
+
+- Opt-in: بدون این فلگ، pytest کاملاً سوییت‌هات رو نادیده می‌گیره.
+- هر کیس = یک تست pytest؛ در شکست، جزئیات دقیق assertion نشون داده می‌شه.
+- کل session به‌عنوان یک ران PromptSeal ذخیره می‌شه (`suite: pytest`) — توی
+  `promptseal runs` میاد و مثل هر ران دیگه‌ای می‌تونی `seal`/`diff` بگیری.
+- پلاگین با نصب promptseal از طریق entry-point ی `pytest11` خودکار ثبت می‌شه.
+
+## بخش ۱۱ — عیب‌یابی
 
 | علامت | راه‌حل |
 |---|---|
@@ -270,11 +332,10 @@ def _mentions_ticket(output: str, value, ctx) -> tuple[bool, str]:
 | `unknown provider 'x'` | زیر `providers:` در `promptseal.yaml` اضافه‌ش کن (یا از `mock:`) |
 | assertion های judge همه fail می‌شن | `defaults.judge.provider` رو توی کانفیگ ست کن |
 | کنسول ویندوز به‌هم‌ریخته نشون می‌ده | CLI خودش UTF-8 رو force می‌کنه؛ برای رنگ بهتر Windows Terminal |
+| `Plugin already registered` | `-p promptseal.pytest_plugin` رو حذف کن — پلاگین خودکار ثبته |
 
 ---
 
 **تموم.** برو چیزی رو seal کن. 🦭
 سوال → [Discussions](https://github.com/ArsinShaabani/promptseal/discussions) ·
 باگ → [Issues](https://github.com/ArsinShaabani/promptseal/issues)
-
-```

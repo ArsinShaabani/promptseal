@@ -52,6 +52,13 @@ def _config():
     return load_config(path)
 
 
+def _check_repeat_args(repeat: Optional[int], flaky_rate: Optional[float]) -> None:
+    if repeat is not None and repeat < 1:
+        raise typer.BadParameter("--repeat must be >= 1")
+    if flaky_rate is not None and not 0.0 < flaky_rate <= 1.0:
+        raise typer.BadParameter("--flaky-pass-rate must be in (0, 1]")
+
+
 @app.command()
 def version() -> None:
     """Show the PromptSeal version."""
@@ -87,8 +94,16 @@ def _run_single(
     html: bool = False,
     json_out: bool = False,
     fail_on_failure: bool = True,
+    repeat: Optional[int] = None,
+    flaky_pass_rate: Optional[float] = None,
 ) -> Run:
-    run_result = execute(config, provider_spec=provider_spec, cases_dir=cases_dir)
+    run_result = execute(
+        config,
+        provider_spec=provider_spec,
+        cases_dir=cases_dir,
+        repeat=repeat,
+        flaky_pass_rate=flaky_pass_rate,
+    )
     if json_out:
         typer.echo(run_result.model_dump_json(indent=2))
     else:
@@ -100,7 +115,8 @@ def _run_single(
             out.write_text(report_html.render_html(run_result), encoding="utf-8")
             console.print(f"   report: [cyan]{out.resolve()}[/cyan]")
         if save_baseline:
-            storage.save_baseline(run_result.meta.run_id)
+            # Embed the full run so baseline.json is self-contained (CI-friendly).
+            storage.save_baseline(run_result.meta.run_id, run=run_result)
             console.print(f"   [green]baseline sealed:[/] {run_result.meta.run_id}")
     if fail_on_failure and run_result.summary.pass_rate < 1.0:
         raise typer.Exit(1)
@@ -117,16 +133,34 @@ def run(
     save_baseline: bool = typer.Option(False, "--save-baseline", help="Mark this run as the baseline"),
     html: bool = typer.Option(False, "--html", help="Also write an HTML report"),
     json_out: bool = typer.Option(False, "--json", help="Machine-readable JSON output"),
+    repeat: Optional[int] = typer.Option(
+        None, "--repeat", help="Run each case N times (flaky detection); overrides config"
+    ),
+    flaky_rate: Optional[float] = typer.Option(
+        None, "--flaky-pass-rate", help="Fraction of attempts that must pass, 0<r<=1; overrides config"
+    ),
 ) -> None:
     """Run the eval suite against one provider — or compare several in a matrix."""
     config = _config()
+    _check_repeat_args(repeat, flaky_rate)
     specs = list(providers) if providers else [config.default_provider]
     try:
         if len(specs) == 1:
-            _run_single(config, specs[0], cases_dir, save_baseline, html, json_out)
+            _run_single(
+                config,
+                specs[0],
+                cases_dir,
+                save_baseline,
+                html,
+                json_out,
+                repeat=repeat,
+                flaky_pass_rate=flaky_rate,
+            )
             return
 
-        runs = execute_matrix(config, specs, cases_dir=cases_dir)
+        runs = execute_matrix(
+            config, specs, cases_dir=cases_dir, repeat=repeat, flaky_pass_rate=flaky_rate
+        )
         if json_out:
             typer.echo(json.dumps([json.loads(r.model_dump_json()) for r in runs], indent=2))
         else:
@@ -140,7 +174,7 @@ def run(
             console.print(f"   report: [cyan]{out.resolve()}[/cyan]")
         if save_baseline:
             # In matrix mode the first listed provider is treated as the reference model.
-            storage.save_baseline(runs[0].meta.run_id)
+            storage.save_baseline(runs[0].meta.run_id, run=runs[0])
             console.print(f"   [green]baseline sealed:[/] {runs[0].meta.run_id}")
     except typer.Exit:
         raise
@@ -343,13 +377,20 @@ def ci(
     min_pass_rate: Optional[float] = typer.Option(
         None, "--min-pass-rate", help="Override ci.min_pass_rate from config"
     ),
+    repeat: Optional[int] = typer.Option(
+        None, "--repeat", help="Run each case N times (flaky detection); overrides config"
+    ),
+    flaky_rate: Optional[float] = typer.Option(
+        None, "--flaky-pass-rate", help="Fraction of attempts that must pass, 0<r<=1; overrides config"
+    ),
 ) -> None:
     """CI mode: run, diff against baseline, write step summary, exit 1 on regression."""
     config = _config()
+    _check_repeat_args(repeat, flaky_rate)
     if min_pass_rate is not None:
         config.ci.min_pass_rate = min_pass_rate
     try:
-        run_result = execute(config, provider_spec=provider)
+        run_result = execute(config, provider_spec=provider, repeat=repeat, flaky_pass_rate=flaky_rate)
     except Exception as exc:  # noqa: BLE001
         console.print(f"[red]Run failed: {exc}[/]")
         raise typer.Exit(2)

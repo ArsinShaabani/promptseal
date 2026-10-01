@@ -18,6 +18,35 @@ from promptseal.providers import Provider, ProviderError, get_provider
 from promptseal import storage
 
 
+def load_suite_file(path: Path) -> Suite:
+    """Load a single suite YAML file."""
+    raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    raw_cases = raw.get("cases") or []
+    cases: list[Case] = []
+    for i, rc in enumerate(raw_cases):
+        if not isinstance(rc, dict) or "id" not in rc or "prompt" not in rc:
+            raise ValueError(
+                f"{path.name}: case #{i + 1} must be a mapping with at least 'id' and 'prompt'"
+            )
+        cases.append(
+            Case(
+                id=str(rc["id"]),
+                prompt=str(rc["prompt"]),
+                system=rc.get("system"),
+                description=rc.get("description"),
+                vars=rc.get("vars", {}) or {},
+                asserts=parse_asserts(rc.get("asserts") or []),
+                tags=rc.get("tags", []) or [],
+            )
+        )
+    return Suite(
+        name=str(raw.get("suite") or path.stem),
+        source_file=str(path),
+        description=raw.get("description"),
+        cases=cases,
+    )
+
+
 def load_suites(cases_dir: Path) -> list[Suite]:
     """Load every *.yaml / *.yml file in cases_dir as a suite."""
     if not cases_dir.exists():
@@ -25,36 +54,7 @@ def load_suites(cases_dir: Path) -> list[Suite]:
     files = sorted([*cases_dir.glob("*.yaml"), *cases_dir.glob("*.yml")])
     if not files:
         raise FileNotFoundError(f"no suite files (*.yaml) found in {cases_dir}")
-    suites: list[Suite] = []
-    for path in files:
-        raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-        raw_cases = raw.get("cases") or []
-        cases: list[Case] = []
-        for i, rc in enumerate(raw_cases):
-            if not isinstance(rc, dict) or "id" not in rc or "prompt" not in rc:
-                raise ValueError(
-                    f"{path.name}: case #{i + 1} must be a mapping with at least 'id' and 'prompt'"
-                )
-            cases.append(
-                Case(
-                    id=str(rc["id"]),
-                    prompt=str(rc["prompt"]),
-                    system=rc.get("system"),
-                    description=rc.get("description"),
-                    vars=rc.get("vars", {}) or {},
-                    asserts=parse_asserts(rc.get("asserts") or []),
-                    tags=rc.get("tags", []) or [],
-                )
-            )
-        suites.append(
-            Suite(
-                name=str(raw.get("suite") or path.stem),
-                source_file=str(path),
-                description=raw.get("description"),
-                cases=cases,
-            )
-        )
-    return suites
+    return [load_suite_file(path) for path in files]
 
 
 def _render(text: str, variables: dict) -> str:
@@ -86,42 +86,86 @@ def _judge_fn(judge_provider: Provider) -> JudgeFn:
     return judge
 
 
+def _run_case_once(case: Case, provider: Provider, judge_fn: Optional[JudgeFn]) -> CaseResult:
+    """One attempt of a single case."""
+    prompt = _render(case.prompt, case.vars)
+    system = _render(case.system, case.vars) if case.system else None
+    try:
+        completion = provider.complete(system, prompt)
+    except ProviderError as exc:
+        return CaseResult(case_id=case.id, status="error", error=str(exc))
+
+    ctx = CheckContext(
+        latency_ms=completion.latency_ms,
+        cost_usd=completion.cost_usd,
+        judge_fn=judge_fn,
+    )
+    assertion_results = run_asserts(case.asserts, completion.text, ctx)
+    failed = [a for a in assertion_results if not a.passed]
+    status = "fail" if failed else "pass"
+    return CaseResult(
+        case_id=case.id,
+        status=status,
+        output=completion.text,
+        latency_ms=completion.latency_ms,
+        cost_usd=completion.cost_usd,
+        assertion_results=assertion_results,
+    )
+
+
+def _aggregate_attempts(
+    case: Case, attempts: list[CaseResult], flaky_pass_rate: float
+) -> CaseResult:
+    """Combine repeat > 1 attempts of one case into a single result (flaky detection).
+
+    The case passes when at least `flaky_pass_rate` of its attempts passed. The
+    representative attempt (whose output/details are kept) is the first failing
+    attempt, or the first passing one when nothing failed.
+    """
+    passed = sum(1 for a in attempts if a.status == "pass")
+    ratio_ok = (passed / len(attempts)) >= flaky_pass_rate - 1e-9
+    if ratio_ok:
+        status = "pass"
+        representative = next((a for a in attempts if a.status == "pass"), attempts[-1])
+    else:
+        representative = next((a for a in attempts if a.status != "pass"), attempts[-1])
+        status = representative.status
+    costs = [a.cost_usd for a in attempts if a.cost_usd is not None]
+    return CaseResult(
+        case_id=case.id,
+        status=status,
+        output=representative.output,
+        latency_ms=round(sum(a.latency_ms for a in attempts) / len(attempts)),
+        cost_usd=(sum(costs) / len(costs)) if costs else None,
+        assertion_results=representative.assertion_results,
+        error=representative.error,
+        attempts=len(attempts),
+        passed_attempts=passed,
+    )
+
+
 def run_cases(
     cases: list[Case],
     suite_name: str,
     provider: Provider,
     judge_fn: Optional[JudgeFn] = None,
+    repeat: int = 1,
+    flaky_pass_rate: float = 1.0,
 ) -> Run:
-    """Execute cases sequentially against one provider and return a Run."""
+    """Execute cases sequentially against one provider and return a Run.
+
+    With repeat > 1 every case runs N times (flaky detection): it passes only
+    when at least `flaky_pass_rate` of the attempts pass.
+    """
+    repeat = max(1, int(repeat))
     started = time.perf_counter()
     results: list[CaseResult] = []
     for case in cases:
-        prompt = _render(case.prompt, case.vars)
-        system = _render(case.system, case.vars) if case.system else None
-        try:
-            completion = provider.complete(system, prompt)
-        except ProviderError as exc:
-            results.append(CaseResult(case_id=case.id, status="error", error=str(exc)))
-            continue
-
-        ctx = CheckContext(
-            latency_ms=completion.latency_ms,
-            cost_usd=completion.cost_usd,
-            judge_fn=judge_fn,
-        )
-        assertion_results = run_asserts(case.asserts, completion.text, ctx)
-        failed = [a for a in assertion_results if not a.passed]
-        status = "fail" if failed else "pass"
-        results.append(
-            CaseResult(
-                case_id=case.id,
-                status=status,
-                output=completion.text,
-                latency_ms=completion.latency_ms,
-                cost_usd=completion.cost_usd,
-                assertion_results=assertion_results,
-            )
-        )
+        attempts = [_run_case_once(case, provider, judge_fn) for _ in range(repeat)]
+        if repeat == 1:
+            results.append(attempts[0])
+        else:
+            results.append(_aggregate_attempts(case, attempts, flaky_pass_rate))
 
     total = len(results)
     passed = sum(1 for r in results if r.status == "pass")
@@ -142,6 +186,8 @@ def run_cases(
             suite=suite_name,
             git_commit=_git_commit(),
             promptseal_version=__version__,
+            repeat=repeat,
+            flaky_pass_rate=flaky_pass_rate,
         ),
         summary=RunSummary(
             total=total,
@@ -162,6 +208,8 @@ def execute(
     provider_spec: Optional[str] = None,
     cases_dir: Optional[Path] = None,
     root: Optional[Path] = None,
+    repeat: Optional[int] = None,
+    flaky_pass_rate: Optional[float] = None,
 ) -> Run:
     """Full pipeline: load suites -> build providers -> run -> persist."""
     root = root or Path.cwd()
@@ -183,7 +231,16 @@ def execute(
     if not cases:
         raise ValueError(f"no cases found in {cases_path}")
 
-    run = run_cases(cases, suite_name=config.suite, provider=provider, judge_fn=judge_fn)
+    rep = config.repeat if repeat is None else repeat
+    rate = config.flaky_pass_rate if flaky_pass_rate is None else flaky_pass_rate
+    run = run_cases(
+        cases,
+        suite_name=config.suite,
+        provider=provider,
+        judge_fn=judge_fn,
+        repeat=rep,
+        flaky_pass_rate=rate,
+    )
     storage.save_run(run, root)
     return run
 
@@ -193,9 +250,18 @@ def execute_matrix(
     provider_specs: list[str],
     cases_dir: Optional[Path] = None,
     root: Optional[Path] = None,
+    repeat: Optional[int] = None,
+    flaky_pass_rate: Optional[float] = None,
 ) -> list[Run]:
     """Run the suite against several providers; returns runs in the given order."""
     return [
-        execute(config, provider_spec=spec, cases_dir=cases_dir, root=root)
+        execute(
+            config,
+            provider_spec=spec,
+            cases_dir=cases_dir,
+            root=root,
+            repeat=repeat,
+            flaky_pass_rate=flaky_pass_rate,
+        )
         for spec in provider_specs
     ]

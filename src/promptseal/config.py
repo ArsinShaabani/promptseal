@@ -55,6 +55,8 @@ class AppConfig:
     cases_dir: str = "cases"
     default_provider: str = "mock:echo"
     timeout_s: float = 60.0
+    repeat: int = 1  # run each case N times (flaky detection)
+    flaky_pass_rate: float = 1.0  # fraction of attempts that must pass, in (0, 1]
     providers: dict[str, ProviderConfig] = field(default_factory=dict)
     judge: JudgeConfig = field(default_factory=JudgeConfig)
     ci: CIConfig = field(default_factory=CIConfig)
@@ -88,6 +90,12 @@ def load_config(path: Optional[Path] = None) -> AppConfig:
     defaults = raw.get("defaults", {}) or {}
     cfg.default_provider = defaults.get("provider", cfg.default_provider)
     cfg.timeout_s = float(defaults.get("timeout_s", cfg.timeout_s))
+    cfg.repeat = int(defaults.get("repeat", cfg.repeat))
+    cfg.flaky_pass_rate = float(defaults.get("flaky_pass_rate", cfg.flaky_pass_rate))
+    if cfg.repeat < 1:
+        raise ValueError("defaults.repeat must be >= 1")
+    if not 0.0 < cfg.flaky_pass_rate <= 1.0:
+        raise ValueError("defaults.flaky_pass_rate must be in (0, 1]")
 
     providers_raw = raw.get("providers", {}) or {}
     merged = {**DEFAULT_PROVIDERS, **providers_raw}

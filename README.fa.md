@@ -23,7 +23,9 @@ PromptSeal ثبت می‌کنه که پرامپت‌ها *باید* چطور ر�
 - 📊 **Seal و Diff** — baseline رو قفل کن، بعد دقیقاً ببین کدوم کیس‌ها رگرسیون شدن و کدوم‌ها بهتر شدن
 - 🚦 **گیت CI** — دستور `promptseal ci` هنگام رگرسیون exit code 1 می‌ده و خلاصه توی GitHub می‌ذاره
 - 🕵️ **LLM-as-judge** داخلی + **provider ماک** برای دموی کاملاً آفلاین
-- 🎥 **ضبط ترافیک واقعی** — پراکسی لوکال که ترافیک اپت رو می‌گیره و خودش کیس می‌سازه
+- 🎥 **ضبط ترافیک واقعی** — پراکسی لوکال یا SDK ی `promptseal.capture` ترافیک اپت رو می‌گیره و خودش کیس می‌سازه
+- 🎲 **تشخیص flaky** — `--repeat N` هر کیس رو N بار اجرا می‌کنه؛ پاس فقط با آستانه‌ی آماری از تلاش‌ها
+- 🧪 **پلاگین pytest** — eval ها کنار تست‌های unit: ‏`pytest --promptseal`
 - 📦 **Local-first** — ران‌ها فایل JSON ساده‌ان؛ بدون سرور، بدون اکانت، بدون تلمتری
 
 ## شروع سریع (۳۰ ثانیه، بدون API key)
@@ -85,6 +87,9 @@ promptseal seal                         # رفتار فعلی رو baseline کن
 انتخاب کردی). ایمیل‌ها، شماره کارت و شماره تلفن به‌صورت `<EMAIL>` / `<CARD>` / `<PHONE>`
 ماسک می‌شن مگر اینکه `--no-redact` بزنی.
 
+پراکسی نمی‌خوای؟ SDK ی `promptseal.capture` مستقیم از کدت ضبط می‌کنه — همون فرمت JSONL،
+همون تبدیل `--to-cases` (ببین [TUTORIAL.fa.md](TUTORIAL.fa.md)).
+
 ## مخزنت رو با CI محافظت کن
 
 ```yaml
@@ -107,6 +112,10 @@ jobs:
 دستور `promptseal ci` با baseline قفل‌شده مقایسه می‌کنه، خلاصه‌ی markdown رو توی PR
 می‌ذاره، و **هنگام رگرسیون بیلد رو fail می‌کنه** — همون‌طوری که تست‌های unit می‌کنن،
 ولی برای بخش‌های non-deterministic استکت.
+
+`promptseal seal` فایل `.promptseal/baseline.json` رو می‌نویسه — یک snapshot مستقل از
+رفتار قفل‌شده که توی git سفید‌لیست شده. یک بار commit‌ش کن و هر PR نسبت به همون سنجیده
+می‌شه؛ بدون هیچ اتصال اضافه‌ای توی CI.
 
 ## رفتار رو یک بار تعریف کن
 
@@ -134,7 +143,7 @@ cases:
       - max_latency_s: 10
 ```
 
-### assertion های داخلی (۱۳)
+### assertion های داخلی (۱۴)
 
 | assertion | چی رو چک می‌کنه |
 |---|---|
@@ -174,17 +183,20 @@ cases:
 ## اصول طراحی
 
 - **Local-first:** ران‌ها JSON ساده توی `.promptseal/` هستن. پرامپت‌هات فقط به همون
-  provider‌ای می‌رن که خودت انتخاب کردی.
+  provider‌ای می‌رن که خودت انتخاب کردی. `.promptseal/baseline.json` رو commit کن
+  (snapshot کاملی از ران قفل‌شده‌ست) و گیت CI بدون هیچ wire اضافه‌ای کار می‌کنه.
 - **بدون lock-in:** با هر چیزی که فرمت chat-completions شرکت OpenAI رو حرف می‌زنه کار می‌کنه.
 - **ذخیره‌سازی خسته‌کننده:** می‌تونی روی فایل ران `git diff` بگیری. بدون daemon، بدون دیتابیس.
 - **سریع:** پایتون خالص، وابستگی کمینه، provider ماک برای دمو و تست فوری.
 
 ## وضعیت و نقشه‌راه
 
-`v0.2` — حلقه‌ی اصلی (`init`/`run`/`seal`/`diff`/`report`/`runs`/`ci`)، ۱۳ assertion،
+`v0.3` — حلقه‌ی اصلی (`init`/`run`/`seal`/`diff`/`report`/`runs`/`ci`)، ۱۴ assertion،
 provider های ماک + سازگار با OpenAI، **مقایسه‌ی ماتریسی چندمدلی**، ضبط ترافیک
-(`record`)، خروجی JSON، گزارش HTML و گیت GitHub Actions. نقشه‌راه کامل:
-[ROADMAP.md](ROADMAP.md)
+(`record`)، خروجی JSON، گزارش HTML و گیت GitHub Actions + **baseline های commit شدنی
+و مستقل**، **تشخیص flaky با `--repeat`**، **SDK ی `promptseal.capture`**،
+**پلاگین pytest (`pytest --promptseal`)** و **سایت مستندات mkdocs**.
+نقشه‌راه کامل: [ROADMAP.md](ROADMAP.md)
 
 ## مشارکت
 

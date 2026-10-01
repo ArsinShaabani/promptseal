@@ -13,8 +13,10 @@ venv/
 .coverage
 htmlcov/
 
-# PromptSeal run artifacts (baseline strategy is documented in the README)
-.promptseal/
+# PromptSeal artifacts: runs/captures stay local; baseline.json is committed so CI
+# gates work out of the box (see README / TUTORIAL "Baseline strategy").
+.promptseal/*
+!.promptseal/baseline.json
 
 # OS / IDE
 .DS_Store

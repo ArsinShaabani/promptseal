@@ -10,7 +10,8 @@
 **Regression testing for prompts, agents, and models. Know what breaks *before* you switch.**
 
 🌍 **Read this in Persian (فارسی): [README.fa.md](README.fa.md)** ·
-📚 **Full tutorial: [TUTORIAL.md](TUTORIAL.md) | [آموزش کامل فارسی](TUTORIAL.fa.md)**
+📚 **Full tutorial: [TUTORIAL.md](TUTORIAL.md) | [آموزش کامل فارسی](TUTORIAL.fa.md)** ·
+📖 **Docs: [arsinshaabani.github.io/promptseal](https://arsinshaabani.github.io/promptseal/)**
 
 You changed one word in your system prompt. Or swapped `gpt-4o` for that shiny new
 open-weights model. Did you just break your app? **Nobody knows — until your users do.**
@@ -28,6 +29,8 @@ baseline (gpt-4o): 100% ██████████  →  candidate (new mode
 - 🧪 **YAML cases** — describe behavior once (`contains`, `regex`, `json_valid`, `llm_judge`, `max_cost_usd`, …)
 - 🔁 **Run anywhere** — any OpenAI-compatible endpoint: OpenAI, OpenRouter, Ollama, vLLM, LiteLLM…
 - 📊 **Seal & diff** — freeze a baseline, then see exactly which cases regressed or improved
+- 🎲 **Flaky detection** — `--repeat N` runs each case N times; it passes only if ≥ threshold of attempts pass
+- 🧪 **pytest plugin** — evals live next to your unit tests: `pytest --promptseal`
 - 🚦 **CI gate** — `promptseal ci` exits 1 on regressions and writes a GitHub step summary
 - 🕵️ **LLM-as-judge** built in, **offline mock provider** for zero-key demos
 - 📦 **Local-first** — plain JSON runs, no server, no account, no telemetry
@@ -107,6 +110,9 @@ Emails, card numbers and phone numbers are masked with `<EMAIL>` / `<CARD>` / `<
 unless you pass `--no-redact`. Streaming responses are rejected with a clear message
 (disable streaming for recorded requests).
 
+Prefer no proxy? The `promptseal.capture` SDK records in-process from your own code —
+same JSONL format, same `--to-cases` conversion (see the [tutorial](TUTORIAL.md)).
+
 ## Guard your repo with CI
 
 ```yaml
@@ -129,6 +135,10 @@ jobs:
 `promptseal ci` compares against your sealed baseline, posts a markdown summary to
 the PR, and **fails the build when behavior regresses** — the same way unit tests do,
 but for the non-deterministic parts of your stack.
+
+`promptseal seal` writes `.promptseal/baseline.json` — a self-contained snapshot of
+your sealed behavior that's git-whitelisted. Commit it once and every PR is gated
+against it, with no extra CI wiring.
 
 ## Describe behavior once
 
@@ -156,7 +166,7 @@ cases:
       - max_latency_s: 10
 ```
 
-### Built-in assertions (13)
+### Built-in assertions (14)
 
 | Assertion | What it checks |
 |---|---|
@@ -194,16 +204,19 @@ deserves to be a *one-command, zero-server* experience for every developer, not 
 
 ## Design principles
 
-- **Local-first**: runs are plain JSON in `.promptseal/`. Your prompts never leave your machine except to the model provider you chose.
+- **Local-first**: runs are plain JSON in `.promptseal/`. Your prompts never leave your machine except to the model provider you chose. Commit `.promptseal/baseline.json` (a self-contained snapshot of your sealed run) and CI works with zero wiring.
 - **Zero lock-in**: works with anything that speaks the OpenAI chat-completions format.
 - **Boring storage**: you can `git diff` a run file. No daemon, no database.
 - **Fast**: pure-Python, minimal deps, mock provider makes demos and tests instant.
 
 ## Status & roadmap
 
-`v0.2` — core loop (`init`/`run`/`seal`/`diff`/`report`/`runs`/`ci`), 13 assertions,
+`v0.3` — core loop (`init`/`run`/`seal`/`diff`/`report`/`runs`/`ci`), 14 assertions,
 mock + OpenAI-compatible providers, **multi-model matrix comparison**,
-**traffic recorder (`record`)**, JSON output, HTML reports, GitHub Actions gate.
+**traffic recorder (`record`)**, JSON output, HTML reports, GitHub Actions gate,
+**committed self-contained baselines**, **flaky detection (`--repeat`)**, the
+**`promptseal.capture` SDK**, a **pytest plugin (`pytest --promptseal`)** and a
+**mkdocs-material docs site** (`docs/`, auto-deployed to GitHub Pages).
 Bilingual docs: [English](README.md) | [فارسی](README.fa.md).
 See [ROADMAP.md](ROADMAP.md) for the full plan.
 

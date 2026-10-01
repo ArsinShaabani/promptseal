@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "promptseal"
-version = "0.2.0"
+version = "0.3.0"
 description = "🦭 Regression testing for prompts, agents, and models. Know what breaks before you switch."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -39,6 +39,13 @@ dev = [
     "pytest-cov>=4.1",
     "ruff>=0.4",
 ]
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+]
+
+[project.entry-points.pytest11]
+promptseal = "promptseal.pytest_plugin"
 
 [project.urls]
 Homepage = "https://github.com/ArsinShaabani/promptseal"

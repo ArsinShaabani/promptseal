@@ -41,6 +41,8 @@ def print_run(run: Run) -> None:
     for r in run.results:
         status_style = _STATUS_STYLE.get(r.status, "white")
         status_text = f"[{status_style}]{r.status.upper()}[/]"
+        if r.attempts is not None and r.attempts > 1:
+            status_text += f" [dim]({r.passed_attempts or 0}/{r.attempts})[/]"
         if r.status == "error":
             checks = (r.error or "unknown error")[:120]
         else:

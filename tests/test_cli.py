@@ -123,3 +123,27 @@ def test_diff_json_output(tmp_path, monkeypatch):
     payload = json.loads(result.output)
     assert payload["verdict"] == "regression"
     assert set(payload["regressions"]) == {"echo-greeting", "echo-content"}
+
+
+def test_run_repeat_flag(tmp_path, monkeypatch):
+    _in_tmp(tmp_path, monkeypatch)
+    runner.invoke(app, ["init"])
+    result = runner.invoke(app, ["run", "--provider", "mock:echo", "--repeat", "3", "--json"])
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["meta"]["repeat"] == 3
+    assert payload["results"][0]["attempts"] == 3
+    assert payload["results"][0]["passed_attempts"] == 3
+
+
+def test_baseline_survives_without_runs_dir(tmp_path, monkeypatch):
+    # The embedded baseline snapshot must be enough for ci (committed-baseline flow).
+    _in_tmp(tmp_path, monkeypatch)
+    runner.invoke(app, ["init"])
+    assert runner.invoke(app, ["seal", "--provider", "mock:echo"]).exit_code == 0
+    import shutil
+
+    shutil.rmtree(Path(".promptseal") / "runs")
+    result = runner.invoke(app, ["ci", "--provider", "mock:echo"])
+    assert result.exit_code == 0, result.output
+    assert "Sealed" in result.output
