@@ -23,6 +23,8 @@
 | `pytest --promptseal` | اجرای سوییت‌های eval به‌عنوان تست pytest، کنار تست‌های unit |
 | `promptseal driftwatch` | روند pass-rate/هزینه/تأخیر در HTML لوکال |
 | `promptseal doctor` | سلف‌چک: کانفیگ، provider ها، رجیستری، storage |
+| `promptseal run --list` | لیست کیس‌های مچ‌شده بدون تماس با provider |
+| `promptseal run --tags pii` | اجرای فقط کیس‌های تگ‌دار |
 | `promptseal version` | نمایش نسخه |
 
 ---
@@ -292,6 +294,26 @@ promptseal diff --json                 # دیف ماشین‌خوان
 
 فایل‌های ران JSON ساده توی `.promptseal/runs/` هستن — داشبورد بساز، آلارم بذار،
 به ابزارهای دیگه بده. هیچ‌چیز هیچ‌جا آپلود نمی‌شه.
+
+### انتخاب کیس و کنترل اجرا
+
+```bash
+promptseal run --list                  # لیست خشک — بدون هیچ تماس با provider، بدون API key
+promptseal run --tags pii,security     # فقط کیس‌هایی که این تگ‌ها رو دارن
+promptseal run --exclude-tags flaky    # رد کردن کیس‌های تگ‌دار
+promptseal run --case pii-guard        # اجرای یک کیس خاص با ID (عالی برای دیباگ)
+promptseal run --skip-case slow-1,slow-2
+promptseal run --fail-fast             # توقف در اولین شکست (صرفه‌جویی هزینه)
+promptseal run --concurrency 4         # کیس‌های موازی (ترتیب حفظ می‌شه)
+promptseal runs --json                 # لیست ران‌های ماشین‌خوان
+promptseal diff --fail-on-regression   # هنگام رگرسیون exit 1 — برای اسکریپت‌ها
+promptseal init -p ollama:llama3.1:8b  # اسکافولد با provider پیش‌فرض خودت
+```
+
+همین فیلترها روی `promptseal ci` هم کار می‌کنن — مثلاً توی CI فقط زیرمجموعه‌ی
+`--tags critical` رو گیت کن در حالی که سوییت کامل لوکال اجرا می‌شه. کیس‌هات رو
+توی YAML تگ بزن: `tags: [pii, security]`. با `--concurrency > 1`، فلگ
+`--fail-fast` نادیده گرفته می‌شه.
 
 ## بخش ۹ — assertion سفارشی (۱۰ خط پایتون)
 

@@ -31,3 +31,18 @@ def test_invalid_repeat_raises(tmp_path):
 def test_invalid_flaky_rate_raises(tmp_path):
     with pytest.raises(ValueError):
         load_config(_write(tmp_path, "defaults:\n  flaky_pass_rate: 1.5\n"))
+
+
+def test_concurrency_default(tmp_path):
+    cfg = load_config(_write(tmp_path, "suite: t\n"))
+    assert cfg.concurrency == 1
+
+
+def test_concurrency_from_yaml(tmp_path):
+    cfg = load_config(_write(tmp_path, "defaults:\n  concurrency: 4\n"))
+    assert cfg.concurrency == 4
+
+
+def test_invalid_concurrency_raises(tmp_path):
+    with pytest.raises(ValueError):
+        load_config(_write(tmp_path, "defaults:\n  concurrency: 0\n"))

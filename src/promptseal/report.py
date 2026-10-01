@@ -64,6 +64,8 @@ def print_run(run: Run) -> None:
         table.add_row(r.case_id, status_text, f"{r.latency_ms}ms", checks)
     console.print(table)
 
+    if s.interrupted:
+        console.print("[yellow]⚠ fail-fast — run stopped early at the first failing case.[/]")
     if s.pass_rate == 1.0:
         console.print("\n[green bold]All cases passed. You're sealed. 🦭[/]\n")
     else:

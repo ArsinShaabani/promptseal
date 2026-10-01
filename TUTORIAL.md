@@ -22,6 +22,8 @@
 | `pytest --promptseal` | Run eval suites as pytest tests, next to unit tests |
 | `promptseal driftwatch` | Local HTML trend of pass-rate/cost/latency over runs |
 | `promptseal doctor` | Self-check: config, providers, registry, storage |
+| `promptseal run --list` | List matching cases without calling the provider |
+| `promptseal run --tags pii` | Run only cases carrying a tag |
 | `promptseal version` | Show version |
 
 ---
@@ -292,6 +294,25 @@ promptseal diff --json                 # machine-readable diff
 
 Run files are plain JSON in `.promptseal/runs/` — build dashboards, alerts, or
 feed them into other tools. Nothing is ever uploaded anywhere.
+
+### Case selection & execution options
+
+```bash
+promptseal run --list                  # dry listing — no provider calls, no API key
+promptseal run --tags pii,security     # only cases carrying any of these tags
+promptseal run --exclude-tags flaky    # skip tagged cases
+promptseal run --case pii-guard        # run a single case by ID (great for debugging)
+promptseal run --skip-case slow-1,slow-2
+promptseal run --fail-fast             # stop at the first failure (saves cost)
+promptseal run --concurrency 4         # parallel cases (order preserved)
+promptseal runs --json                 # machine-readable run list
+promptseal diff --fail-on-regression   # exit 1 on regression — for scripts
+promptseal init -p ollama:llama3.1:8b  # scaffold with your default provider
+```
+
+The same filters work on `promptseal ci` — gate a tagged subset in CI (e.g.
+`--tags critical`) while the full suite runs locally. Tag cases in YAML with
+`tags: [pii, security]`. With `--concurrency > 1`, `--fail-fast` is ignored.
 
 ## Part 9 — Custom assertions (10 lines of Python)
 

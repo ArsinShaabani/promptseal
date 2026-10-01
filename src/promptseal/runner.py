@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import subprocess
 import time
+from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -16,6 +18,45 @@ from promptseal.config import AppConfig
 from promptseal.models import Case, CaseResult, Run, RunMeta, RunSummary, Suite
 from promptseal.providers import Provider, ProviderError, get_provider
 from promptseal import storage
+
+
+@dataclass
+class CaseFilter:
+    """Tag/ID based case selection (CLI: --tags / --exclude-tags / --case / --skip-case)."""
+
+    tags: frozenset = frozenset()
+    exclude_tags: frozenset = frozenset()
+    only: frozenset = frozenset()
+    skip: frozenset = frozenset()
+
+    def matches(self, case: Case) -> bool:
+        case_tags = set(case.tags)
+        if self.only and case.id not in self.only:
+            return False
+        if case.id in self.skip:
+            return False
+        if self.tags and not (case_tags & self.tags):
+            return False
+        if self.exclude_tags and (case_tags & self.exclude_tags):
+            return False
+        return True
+
+    @staticmethod
+    def parse(tags=None, exclude_tags=None, only=None, skip=None) -> "CaseFilter":
+        """Build a filter from comma-separated strings, lists, or None values."""
+
+        def split(value) -> frozenset:
+            if not value:
+                return frozenset()
+            items = value if isinstance(value, (list, tuple, set)) else str(value).split(",")
+            return frozenset(str(v).strip() for v in items if str(v).strip())
+
+        return CaseFilter(
+            tags=split(tags),
+            exclude_tags=split(exclude_tags),
+            only=split(only),
+            skip=split(skip),
+        )
 
 
 def load_suite_file(path: Path) -> Suite:
@@ -173,21 +214,38 @@ def run_cases(
     judge_fn: Optional[JudgeFn] = None,
     repeat: int = 1,
     flaky_pass_rate: float = 1.0,
+    fail_fast: bool = False,
+    concurrency: int = 1,
 ) -> Run:
-    """Execute cases sequentially against one provider and return a Run.
+    """Execute cases against one provider and return a Run.
 
     With repeat > 1 every case runs N times (flaky detection): it passes only
-    when at least `flaky_pass_rate` of the attempts pass.
+    when at least `flaky_pass_rate` of the attempts pass. With concurrency > 1
+    cases run in parallel threads (input order preserved; fail-fast ignored).
+    With fail_fast the run stops at the first failing case (sequential mode).
     """
     repeat = max(1, int(repeat))
+    concurrency = max(1, int(concurrency or 1))
     started = time.perf_counter()
     results: list[CaseResult] = []
-    for case in cases:
+    interrupted = False
+
+    def _execute_case(case: Case) -> CaseResult:
         attempts = [_run_case_once(case, provider, judge_fn) for _ in range(repeat)]
         if repeat == 1:
-            results.append(attempts[0])
-        else:
-            results.append(_aggregate_attempts(case, attempts, flaky_pass_rate))
+            return attempts[0]
+        return _aggregate_attempts(case, attempts, flaky_pass_rate)
+
+    if concurrency > 1:
+        with ThreadPoolExecutor(max_workers=concurrency) as pool:
+            results = list(pool.map(_execute_case, cases))
+    else:
+        for case in cases:
+            result = _execute_case(case)
+            results.append(result)
+            if fail_fast and result.status != "pass":
+                interrupted = True
+                break
 
     total = len(results)
     passed = sum(1 for r in results if r.status == "pass")
@@ -220,6 +278,7 @@ def run_cases(
             total_cost_usd=sum(costs) if costs else None,
             total_latency_ms=sum(r.latency_ms for r in results),
             duration_s=round(time.perf_counter() - started, 3),
+            interrupted=interrupted,
         ),
         results=results,
     )
@@ -232,8 +291,11 @@ def execute(
     root: Optional[Path] = None,
     repeat: Optional[int] = None,
     flaky_pass_rate: Optional[float] = None,
+    case_filter: Optional[CaseFilter] = None,
+    fail_fast: bool = False,
+    concurrency: Optional[int] = None,
 ) -> Run:
-    """Full pipeline: load suites -> build providers -> run -> persist."""
+    """Full pipeline: load suites -> filter cases -> build providers -> run -> persist."""
     root = root or Path.cwd()
     cases_path = cases_dir or (root / config.cases_dir)
     suites = load_suites(cases_path)
@@ -252,9 +314,14 @@ def execute(
     cases = [c for s in suites for c in s.cases]
     if not cases:
         raise ValueError(f"no cases found in {cases_path}")
+    if case_filter is not None:
+        cases = [c for c in cases if case_filter.matches(c)]
+        if not cases:
+            raise ValueError("no cases match the given filters")
 
     rep = config.repeat if repeat is None else repeat
     rate = config.flaky_pass_rate if flaky_pass_rate is None else flaky_pass_rate
+    conc = config.concurrency if concurrency is None else concurrency
     run = run_cases(
         cases,
         suite_name=config.suite,
@@ -262,6 +329,8 @@ def execute(
         judge_fn=judge_fn,
         repeat=rep,
         flaky_pass_rate=rate,
+        fail_fast=fail_fast,
+        concurrency=conc,
     )
     run.meta.run_id = storage.unique_run_id(run.meta.run_id, root)
     storage.save_run(run, root)
@@ -275,6 +344,9 @@ def execute_matrix(
     root: Optional[Path] = None,
     repeat: Optional[int] = None,
     flaky_pass_rate: Optional[float] = None,
+    case_filter: Optional[CaseFilter] = None,
+    fail_fast: bool = False,
+    concurrency: Optional[int] = None,
 ) -> list[Run]:
     """Run the suite against several providers; returns runs in the given order."""
     return [
@@ -285,6 +357,9 @@ def execute_matrix(
             root=root,
             repeat=repeat,
             flaky_pass_rate=flaky_pass_rate,
+            case_filter=case_filter,
+            fail_fast=fail_fast,
+            concurrency=concurrency,
         )
         for spec in provider_specs
     ]

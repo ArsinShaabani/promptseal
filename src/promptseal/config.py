@@ -57,6 +57,7 @@ class AppConfig:
     timeout_s: float = 60.0
     repeat: int = 1  # run each case N times (flaky detection)
     flaky_pass_rate: float = 1.0  # fraction of attempts that must pass, in (0, 1]
+    concurrency: int = 1  # parallel case execution (1 = sequential)
     providers: dict[str, ProviderConfig] = field(default_factory=dict)
     judge: JudgeConfig = field(default_factory=JudgeConfig)
     ci: CIConfig = field(default_factory=CIConfig)
@@ -96,6 +97,9 @@ def load_config(path: Optional[Path] = None) -> AppConfig:
         raise ValueError("defaults.repeat must be >= 1")
     if not 0.0 < cfg.flaky_pass_rate <= 1.0:
         raise ValueError("defaults.flaky_pass_rate must be in (0, 1]")
+    cfg.concurrency = int(defaults.get("concurrency", cfg.concurrency))
+    if cfg.concurrency < 1:
+        raise ValueError("defaults.concurrency must be >= 1")
 
     providers_raw = raw.get("providers", {}) or {}
     merged = {**DEFAULT_PROVIDERS, **providers_raw}

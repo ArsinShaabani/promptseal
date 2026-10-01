@@ -78,6 +78,8 @@ class RunSummary(BaseModel):
     total_cost_usd: Optional[float] = None
     total_latency_ms: int = 0
     duration_s: float = 0.0
+    # True when --fail-fast aborted the run at the first failing case.
+    interrupted: bool = False
 
 
 class RunMeta(BaseModel):

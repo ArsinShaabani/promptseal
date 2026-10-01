@@ -25,7 +25,7 @@ from promptseal.diff import DiffReport, diff_runs
 from promptseal.init_templates import INIT_CASES, INIT_YAML
 from promptseal.models import Run
 from promptseal.providers import ProviderError, get_provider
-from promptseal.runner import execute, execute_matrix
+from promptseal.runner import CaseFilter, execute, execute_matrix, load_suites
 
 # Windows consoles (and CI logs) often default to a legacy code page (cp1252);
 # force UTF-8 so the seal and table glyphs never crash the CLI.
@@ -46,8 +46,23 @@ app = typer.Typer(
 console = Console()
 
 
+def _version_callback(value: Optional[bool]) -> None:
+    if value:
+        console.print(f"promptseal {__version__} 🦭")
+        raise typer.Exit()
+
+
 @app.callback()
-def _root() -> None:
+def _root(
+    version: Optional[bool] = typer.Option(
+        None,
+        "--version",
+        "-V",
+        callback=_version_callback,
+        is_eager=True,
+        help="Show the PromptSeal version and exit.",
+    ),
+) -> None:
     """Load third-party assertion plugins (entry-point group promptseal.assertions)."""
     assertions.load_plugins()
 
@@ -67,6 +82,11 @@ def _check_repeat_args(repeat: Optional[int], flaky_rate: Optional[float]) -> No
         raise typer.BadParameter("--flaky-pass-rate must be in (0, 1]")
 
 
+def _check_concurrency(value: Optional[int]) -> None:
+    if value is not None and value < 1:
+        raise typer.BadParameter("--concurrency must be >= 1")
+
+
 @app.command()
 def version() -> None:
     """Show the PromptSeal version."""
@@ -74,10 +94,25 @@ def version() -> None:
 
 
 @app.command()
-def init(force: bool = typer.Option(False, "--force", help="Overwrite existing files.")) -> None:
+def init(
+    force: bool = typer.Option(False, "--force", help="Overwrite existing files."),
+    provider: Optional[str] = typer.Option(
+        None, "--provider", "-p", help="Default provider spec written into the scaffold (e.g. ollama:llama3.1:8b)"
+    ),
+    suite: Optional[str] = typer.Option(
+        None, "--suite", help="Suite name written into the scaffold"
+    ),
+) -> None:
     """Create promptseal.yaml and a starter case suite."""
+    yaml_text = INIT_YAML
+    if provider:
+        if ":" not in provider:
+            raise typer.BadParameter("--provider must look like 'name:model', e.g. openai:gpt-4o")
+        yaml_text = yaml_text.replace("provider: mock:echo", f"provider: {provider}")
+    if suite:
+        yaml_text = yaml_text.replace("suite: my-app", f"suite: {suite}")
     created = []
-    for rel, content in (("promptseal.yaml", INIT_YAML), (Path("cases") / "smoke.yaml", INIT_CASES)):
+    for rel, content in (("promptseal.yaml", yaml_text), (Path("cases") / "smoke.yaml", INIT_CASES)):
         path = Path(rel)
         if path.exists() and not force:
             console.print(f"[yellow]{rel} already exists — skipping.[/]")
@@ -104,6 +139,9 @@ def _run_single(
     fail_on_failure: bool = True,
     repeat: Optional[int] = None,
     flaky_pass_rate: Optional[float] = None,
+    case_filter: Optional[CaseFilter] = None,
+    fail_fast: bool = False,
+    concurrency: Optional[int] = None,
 ) -> Run:
     run_result = execute(
         config,
@@ -111,6 +149,9 @@ def _run_single(
         cases_dir=cases_dir,
         repeat=repeat,
         flaky_pass_rate=flaky_pass_rate,
+        case_filter=case_filter,
+        fail_fast=fail_fast,
+        concurrency=concurrency,
     )
     if json_out:
         typer.echo(run_result.model_dump_json(indent=2))
@@ -147,10 +188,53 @@ def run(
     flaky_rate: Optional[float] = typer.Option(
         None, "--flaky-pass-rate", help="Fraction of attempts that must pass, 0<r<=1; overrides config"
     ),
+    tags: Optional[str] = typer.Option(
+        None, "--tags", help="Only run cases carrying ANY of these tags (comma-separated)"
+    ),
+    exclude_tags: Optional[str] = typer.Option(
+        None, "--exclude-tags", help="Skip cases carrying ANY of these tags (comma-separated)"
+    ),
+    only: Optional[str] = typer.Option(
+        None, "--case", help="Only run these case IDs (comma-separated) — great for debugging one case"
+    ),
+    skip: Optional[str] = typer.Option(
+        None, "--skip-case", help="Skip these case IDs (comma-separated)"
+    ),
+    fail_fast: bool = typer.Option(
+        False, "--fail-fast", help="Stop at the first failing case (ignored with --concurrency > 1)"
+    ),
+    concurrency: Optional[int] = typer.Option(
+        None, "--concurrency", help="Run cases in N parallel threads (default: config defaults.concurrency)"
+    ),
+    list_only: bool = typer.Option(
+        False, "--list", help="List the matching cases and exit — no provider calls, no API key needed"
+    ),
 ) -> None:
     """Run the eval suite against one provider — or compare several in a matrix."""
     config = _config()
     _check_repeat_args(repeat, flaky_rate)
+    _check_concurrency(concurrency)
+    case_filter = CaseFilter.parse(tags, exclude_tags, only, skip)
+
+    if list_only:
+        try:
+            cases_path = cases_dir or (Path.cwd() / config.cases_dir)
+            entries = [(s.name, c) for s in load_suites(cases_path) for c in s.cases]
+        except (FileNotFoundError, ValueError) as exc:
+            console.print(f"[red]{exc}[/]")
+            raise typer.Exit(1)
+        matched = [(sn, c) for sn, c in entries if case_filter.matches(c)]
+        table = Table(show_header=True, header_style="bold")
+        table.add_column("Case", style="cyan", no_wrap=True)
+        table.add_column("Suite")
+        table.add_column("Tags")
+        table.add_column("Checks", justify="right")
+        for sn, c in matched:
+            table.add_row(c.id, sn, ", ".join(c.tags) or "—", str(len(c.asserts)))
+        console.print(table)
+        console.print(f"[green]{len(matched)}[/] of {len(entries)} case(s) match. No provider was called.")
+        return
+
     specs = list(providers) if providers else [config.default_provider]
     try:
         if len(specs) == 1:
@@ -163,11 +247,15 @@ def run(
                 json_out,
                 repeat=repeat,
                 flaky_pass_rate=flaky_rate,
+                case_filter=case_filter,
+                fail_fast=fail_fast,
+                concurrency=concurrency,
             )
             return
 
         runs = execute_matrix(
-            config, specs, cases_dir=cases_dir, repeat=repeat, flaky_pass_rate=flaky_rate
+            config, specs, cases_dir=cases_dir, repeat=repeat, flaky_pass_rate=flaky_rate,
+            case_filter=case_filter, fail_fast=fail_fast, concurrency=concurrency,
         )
         if json_out:
             typer.echo(json.dumps([json.loads(r.model_dump_json()) for r in runs], indent=2))
@@ -320,6 +408,9 @@ def diff(
     base: str = typer.Argument("baseline", help="Baseline run ref (baseline | latest | run_id | path)"),
     cand: str = typer.Argument("latest", help="Candidate run ref"),
     json_out: bool = typer.Option(False, "--json", help="Machine-readable JSON output"),
+    fail_on_regression: bool = typer.Option(
+        False, "--fail-on-regression", help="Exit 1 when the verdict is regression (for scripting)"
+    ),
 ) -> None:
     """Compare two runs and show regressions/improvements."""
     try:
@@ -333,6 +424,8 @@ def diff(
         typer.echo(json.dumps(_diff_to_dict(report), indent=2))
     else:
         report_mod.print_diff(report)
+    if fail_on_regression and report.verdict != "pass":
+        raise typer.Exit(1)
 
 
 @app.command()
@@ -354,11 +447,34 @@ def report(
 
 
 @app.command()
-def runs() -> None:
+def runs(
+    json_out: bool = typer.Option(False, "--json", help="Machine-readable JSON list"),
+) -> None:
     """List saved runs."""
     all_runs = storage.list_runs()
     if not all_runs:
         console.print("[yellow]No runs yet — try `promptseal run`.[/]")
+        return
+    baseline_id = storage.load_baseline()
+    if json_out:
+        typer.echo(
+            json.dumps(
+                [
+                    {
+                        "run_id": r.meta.run_id,
+                        "created_at": r.meta.created_at,
+                        "provider": r.meta.provider,
+                        "model": r.meta.model,
+                        "suite": r.meta.suite,
+                        "pass_rate": r.summary.pass_rate,
+                        "total": r.summary.total,
+                        "is_baseline": r.meta.run_id == baseline_id,
+                    }
+                    for r in all_runs
+                ],
+                indent=2,
+            )
+        )
         return
     table = Table(show_header=True, header_style="bold")
     table.add_column("Run ID", style="cyan")
@@ -466,14 +582,42 @@ def ci(
     flaky_rate: Optional[float] = typer.Option(
         None, "--flaky-pass-rate", help="Fraction of attempts that must pass, 0<r<=1; overrides config"
     ),
+    tags: Optional[str] = typer.Option(
+        None, "--tags", help="Only run cases carrying ANY of these tags (comma-separated)"
+    ),
+    exclude_tags: Optional[str] = typer.Option(
+        None, "--exclude-tags", help="Skip cases carrying ANY of these tags (comma-separated)"
+    ),
+    only: Optional[str] = typer.Option(
+        None, "--case", help="Only run these case IDs (comma-separated)"
+    ),
+    skip: Optional[str] = typer.Option(
+        None, "--skip-case", help="Skip these case IDs (comma-separated)"
+    ),
+    fail_fast: bool = typer.Option(
+        False, "--fail-fast", help="Stop at the first failing case (ignored with --concurrency > 1)"
+    ),
+    concurrency: Optional[int] = typer.Option(
+        None, "--concurrency", help="Run cases in N parallel threads (default: config defaults.concurrency)"
+    ),
 ) -> None:
     """CI mode: run, diff against baseline, write step summary, exit 1 on regression."""
     config = _config()
     _check_repeat_args(repeat, flaky_rate)
+    _check_concurrency(concurrency)
+    case_filter = CaseFilter.parse(tags, exclude_tags, only, skip)
     if min_pass_rate is not None:
         config.ci.min_pass_rate = min_pass_rate
     try:
-        run_result = execute(config, provider_spec=provider, repeat=repeat, flaky_pass_rate=flaky_rate)
+        run_result = execute(
+            config,
+            provider_spec=provider,
+            repeat=repeat,
+            flaky_pass_rate=flaky_rate,
+            case_filter=case_filter,
+            fail_fast=fail_fast,
+            concurrency=concurrency,
+        )
     except Exception as exc:  # noqa: BLE001
         console.print(f"[red]Run failed: {exc}[/]")
         raise typer.Exit(2)

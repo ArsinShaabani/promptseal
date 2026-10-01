@@ -102,6 +102,9 @@ The one-command regression loop for individual developers.
 > SDK, pytest plugin (`pytest --promptseal`), mkdocs-material docs site.
 > v0.4.0: agent tool-call assertions + multi-turn cases, `promptseal driftwatch`,
 > assertion plugins + `promptseal doctor`, run-id collision fix.
+> v0.5.0: case filtering (`--tags/--case/--skip-case/--list`), execution control
+> (`--fail-fast`, `--concurrency` + `defaults.concurrency`), `runs --json`,
+> `diff --fail-on-regression`, `init --provider/--suite`, global `--version` flag.
 
 1. **Assets first**: demo GIF (vhs/asciinema), landing page (GitHub Pages), docs site.
    ✅ GIF shipped (`assets/demo.gif`) · ✅ docs site shipped (`docs/`, mkdocs-material,
