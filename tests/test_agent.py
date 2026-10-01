@@ -132,3 +132,41 @@ def test_loader_accepts_messages_without_prompt(tmp_path):
     suite = load_suite_file(path)
     assert suite.cases[0].prompt == ""
     assert suite.cases[0].messages[0]["content"] == "hi"
+
+
+def test_scripted_user_simulation():
+    provider = get_provider("mock:echo", AppConfig())
+    case = Case(
+        id="scripted",
+        prompt="start",
+        script=["turn one", "turn two"],
+        asserts=parse_asserts([{"equals": "Echo: turn two"}]),
+    )
+    run = run_cases([case], "t", provider)
+    r = run.results[0]
+    assert r.status == "pass"
+    assert r.output == "Echo: turn two"
+    assert r.turns == 3
+
+
+def test_scripted_multi_turn_messages():
+    provider = get_provider("mock:echo", AppConfig())
+    case = Case(
+        id="chat-script",
+        messages=[{"role": "user", "content": "q1"}],
+        script=["q2"],
+        asserts=parse_asserts([{"equals": "Echo: q2"}, {"max_latency_s": 1}]),
+    )
+    run = run_cases([case], "t", provider)
+    r = run.results[0]
+    assert r.status == "pass"
+    assert r.turns == 2
+    assert r.latency_ms == 24  # 2 x 12ms mock latency, aggregated
+
+
+def test_no_script_means_no_turns_field():
+    provider = get_provider("mock:echo", AppConfig())
+    run = run_cases(
+        [Case(id="s", prompt="x", asserts=parse_asserts([{"contains": "Echo"}]))], "t", provider
+    )
+    assert run.results[0].turns is None

@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import yaml
 
@@ -81,6 +81,7 @@ def load_suite_file(path: Path) -> Suite:
                 messages=rc.get("messages"),
                 tools=rc.get("tools"),
                 tool_choice=rc.get("tool_choice"),
+                script=rc.get("script"),
             )
         )
     return Suite(
@@ -131,48 +132,63 @@ def _judge_fn(judge_provider: Provider) -> JudgeFn:
 
 
 def _run_case_once(case: Case, provider: Provider, judge_fn: Optional[JudgeFn]) -> CaseResult:
-    """One attempt of a single case."""
+    """One attempt of a single case (scripted-user runs loop until the script ends)."""
+    script = [(_render(t, case.vars) if isinstance(t, str) else str(t)) for t in (case.script or [])]
+
+    if case.messages is not None:
+        chat = []
+        for m in case.messages:
+            if not isinstance(m, dict):
+                continue
+            item = dict(m)
+            if isinstance(item.get("content"), str):
+                item["content"] = _render(item["content"], case.vars)
+            chat.append(item)
+    else:
+        chat = []
+        if case.system:
+            chat.append({"role": "system", "content": _render(case.system, case.vars)})
+        chat.append({"role": "user", "content": _render(case.prompt, case.vars)})
+
     try:
-        if case.messages is not None:
-            chat = []
-            for m in case.messages:
-                if not isinstance(m, dict):
-                    continue
-                item = dict(m)
-                if isinstance(item.get("content"), str):
-                    item["content"] = _render(item["content"], case.vars)
-                chat.append(item)
+        outputs: list[str] = []
+        costs: list[float] = []
+        latency_ms = 0
+        tool_calls: Optional[list[dict[str, Any]]] = None
+        for round_no in range(1 + len(script)):
             completion = provider.complete(
                 messages=chat, tools=case.tools, tool_choice=case.tool_choice
             )
-        else:
-            system = _render(case.system, case.vars) if case.system else None
-            completion = provider.complete(
-                system,
-                _render(case.prompt, case.vars),
-                tools=case.tools,
-                tool_choice=case.tool_choice,
-            )
+            latency_ms += completion.latency_ms
+            if completion.cost_usd is not None:
+                costs.append(completion.cost_usd)
+            outputs.append(completion.text)
+            tool_calls = completion.tool_calls
+            chat.append({"role": "assistant", "content": completion.text})
+            if round_no < len(script):
+                chat.append({"role": "user", "content": script[round_no]})
     except ProviderError as exc:
         return CaseResult(case_id=case.id, status="error", error=str(exc))
 
     ctx = CheckContext(
-        latency_ms=completion.latency_ms,
-        cost_usd=completion.cost_usd,
+        latency_ms=latency_ms,
+        cost_usd=(sum(costs) if costs else None),
         judge_fn=judge_fn,
-        tool_calls=completion.tool_calls,
+        tool_calls=tool_calls,
     )
-    assertion_results = run_asserts(case.asserts, completion.text, ctx)
+    output = outputs[-1]
+    assertion_results = run_asserts(case.asserts, output, ctx)
     failed = [a for a in assertion_results if not a.passed]
     status = "fail" if failed else "pass"
     return CaseResult(
         case_id=case.id,
         status=status,
-        output=completion.text,
-        latency_ms=completion.latency_ms,
-        cost_usd=completion.cost_usd,
+        output=output,
+        latency_ms=latency_ms,
+        cost_usd=(sum(costs) if costs else None),
         assertion_results=assertion_results,
-        tool_calls=completion.tool_calls,
+        tool_calls=tool_calls,
+        turns=(1 + len(script)) if script else None,
     )
 
 

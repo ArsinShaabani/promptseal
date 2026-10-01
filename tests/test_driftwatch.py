@@ -62,3 +62,44 @@ def test_cli_driftwatch_without_runs_fails(tmp_path, monkeypatch):
     result = runner.invoke(app, ["driftwatch"])
     assert result.exit_code == 1
     assert "No runs" in result.output
+
+
+def test_per_case_stats_percentiles():
+    runs = [
+        _run("r1", "openai", "gpt-4o", 1.0, "2026-01-01T00:00:00+00:00"),
+        _run("r2", "mock", "m", 1.0, "2026-01-02T00:00:00+00:00"),
+    ]
+    runs[0].results = [CaseResult(case_id="a", status="pass", cost_usd=0.02, latency_ms=300)]
+    runs[1].results = [CaseResult(case_id="a", status="pass", cost_usd=0.01, latency_ms=100)]
+    stats = driftwatch.per_case_stats(runs)
+    s = stats[0]
+    assert s["case_id"] == "a"
+    assert s["samples"] == 2
+    assert s["cost_p50"] == 0.01
+    assert s["cost_p95"] == 0.02
+    assert s["cost_max"] == 0.02
+    assert s["latency_p50"] == 100
+    assert s["latency_p95"] == 300
+    assert s["cheapest_provider"] == "mock:m"
+
+
+def test_html_contains_stats_section(tmp_path, monkeypatch):
+    from typer.testing import CliRunner
+
+    from promptseal.cli import app
+
+    runner = CliRunner()
+    monkeypatch.chdir(tmp_path)
+    runs = [
+        _run("r1", "openai", "gpt-4o", 1.0, "2026-01-01T00:00:00+00:00"),
+        _run("r2", "mock", "m", 1.0, "2026-01-02T00:00:00+00:00"),
+    ]
+    runs[0].results = [CaseResult(case_id="a", status="pass", cost_usd=0.02, latency_ms=300)]
+    runs[1].results = [CaseResult(case_id="a", status="pass", cost_usd=0.01, latency_ms=100)]
+    storage.save_run(runs[0], tmp_path)
+    storage.save_run(runs[1], tmp_path)
+    result = runner.invoke(app, ["driftwatch"])
+    assert result.exit_code == 0, result.output
+    html = (tmp_path / "promptseal-drift.html").read_text(encoding="utf-8")
+    assert "percentiles across providers" in html
+    assert "mock:m" in html

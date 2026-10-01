@@ -386,6 +386,47 @@ cases:
 می‌کنه. آفلاین، `mock:tools` ایجنتی رو شبیه‌سازی می‌کنه که هر وقت `tools:` تعریف
 شده باشه، `get_weather(city="Paris")` رو صدا می‌زنه.
 
+### کاربر اسکریپت‌شده (`script:`)
+
+یک `script:` از پیام‌های کاربر اضافه کن — بعد از هر پاسخ ایجنت، نوبت اسکریپت‌شده‌ی
+بعدی تزریق می‌شه تا اسکریپت تموم بشه. پاسخ نهایی ایجنت همونیه که assertion روش
+اجرا می‌شه؛ تأخیر/هزینه جمع هر دور محاسبه و `turns` ثبت می‌شه:
+
+```yaml
+  - id: support-handoff
+    prompt: "سفارشم کجاست؟"
+    script: ["ana@example.com"]     # کاربر اسکریپت‌شده با این جواب می‌ده
+    asserts:
+      - contains_any: ["ORD-", "سفارش"]
+      - max_latency_s: 15
+```
+
+### ردپا از قبل داری؟ `promptseal.adapters`
+
+ردپای هر فریم‌ورکی رو با همون assertion ها ارزیابی کن — بدون نیاز به SDK، با
+دیکشنری ساده (یا آبجکت‌های duck-typed پیام LangChain / آیتم‌های `function_call`
+OpenAI Agents):
+
+```python
+from promptseal.adapters import evaluate_conversation, evaluate_trace, tool_calls_from_agents
+
+# پیام‌های LangChain-style (دیکشنری یا آبجکت پیام):
+results = evaluate_conversation(
+    asserts=[{"tools_called": "get_weather"}, {"contains": "sunny"}],
+    messages=my_langchain_messages,
+)
+
+# آیتم‌های خروجی OpenAI Agents SDK:
+results = evaluate_trace(
+    asserts=[{"tool_args": {"get_weather": {"city": "Paris"}}}],
+    output="It is sunny in Paris.",
+    tool_calls=tool_calls_from_agents(run.items),
+)
+```
+
+برای Claude Code هم دستور العمل hooks: یک هوک `Stop`/`PostToolUse` ثبت کن که به
+`promptseal ci --tags changed` شِل بزنه — بقیه‌ش با گیت CLI انجام می‌شه.
+
 ## بخش ۱۲ — دیدن drift: driftwatch و doctor
 
 ```bash

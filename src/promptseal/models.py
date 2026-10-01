@@ -41,6 +41,9 @@ class Case(BaseModel):
     # Agent traces: OpenAI tool schemas forwarded to the provider.
     tools: Optional[list[dict[str, Any]]] = None
     tool_choice: Optional[Any] = None
+    # Scripted-user simulation: after each assistant reply, inject the next user
+    # turn from `script` and continue until the script is exhausted.
+    script: Optional[list[str]] = None
 
 
 class Suite(BaseModel):
@@ -67,6 +70,8 @@ class CaseResult(BaseModel):
     passed_attempts: Optional[int] = None
     # Normalized tool_calls from the assistant message (agent traces).
     tool_calls: Optional[list[dict[str, Any]]] = None
+    # Provider round-trips for this case (present on scripted-user runs).
+    turns: Optional[int] = None
 
 
 class RunSummary(BaseModel):

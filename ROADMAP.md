@@ -60,14 +60,18 @@ The one-command regression loop for individual developers.
 - [x] Tool-call trace assertions — `tools_called` / `tools_not_called` / `call_order` /
       `tool_args` on any OpenAI-compatible tool-calling model (`mock:tools` offline) — v0.4
 - [x] Multi-turn conversation cases — case-level `messages:` chat history with
-      `{{vars}}` rendering (scripted-user simulation still open) — v0.4
-- [ ] Adapters: LangChain/LangGraph callbacks, OpenAI Agents SDK, Claude Code hooks
+      `{{vars}}` rendering, plus scripted-user simulation (`script:`) — v0.4/v0.6
+- [x] Adapters — `promptseal.adapters`: evaluate traces from LangChain-style
+      messages (dicts or duck-typed objects), OpenAI Agents SDK `function_call`
+      items, or any OpenAI-format trace (no SDK needed); Claude Code hook recipe
+      in the tutorial — v0.6
 - [x] `driftwatch` long-term view — `promptseal driftwatch`: self-contained HTML
       dashboard charting pass-rate/cost/latency across every saved run (reads
       `.promptseal/runs` JSON — boring storage beats SQLite) — v0.4
 - [x] Assertion plugins (entry-point group `promptseal.assertions`) + `promptseal
       doctor` self-check (config / providers / judge / registry / storage) — v0.4
-- [ ] Cost observability: per-case cost percentiles across providers
+- [x] Cost observability — per-case cost/latency percentiles (p50/p95/max) across
+      providers in the driftwatch dashboard + `driftwatch.per_case_stats()` API — v0.6
 
 ## Phase 3 — Teams & Scale (v0.6–1.0, months 3–6)
 
@@ -105,6 +109,9 @@ The one-command regression loop for individual developers.
 > v0.5.0: case filtering (`--tags/--case/--skip-case/--list`), execution control
 > (`--fail-fast`, `--concurrency` + `defaults.concurrency`), `runs --json`,
 > `diff --fail-on-regression`, `init --provider/--suite`, global `--version` flag.
+> v0.6.0: scripted-user simulation (`script:`), framework adapters
+> (`promptseal.adapters`), per-case cost percentiles in driftwatch —
+> **Phase 2 complete.**
 
 1. **Assets first**: demo GIF (vhs/asciinema), landing page (GitHub Pages), docs site.
    ✅ GIF shipped (`assets/demo.gif`) · ✅ docs site shipped (`docs/`, mkdocs-material,

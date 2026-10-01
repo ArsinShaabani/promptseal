@@ -31,7 +31,8 @@ baseline (gpt-4o): 100% ██████████  →  candidate (new mode
 - 📊 **Seal & diff** — freeze a baseline, then see exactly which cases regressed or improved
 - 🎲 **Flaky detection** — `--repeat N` runs each case N times; it passes only if ≥ threshold of attempts pass
 - 🧪 **pytest plugin** — evals live next to your unit tests: `pytest --promptseal`
-- 🤖 **Agent-native** — assert tool calls (`tools_called`, `call_order`, `tool_args`) and multi-turn `messages:` cases
+- 🤖 **Agent-native** — assert tool calls (`tools_called`, `call_order`, `tool_args`), multi-turn `messages:` and scripted-user `script:` cases
+- 🔌 **Framework adapters** — `promptseal.adapters` evaluates LangChain / OpenAI Agents traces with the same assertions, no SDK needed
 - 📈 **Driftwatch** — `promptseal driftwatch`: local HTML trend of pass-rate/cost/latency across runs
 - 🎛 **Filters & control** — `--tags / --case / --skip-case / --list`, `--fail-fast`, `--concurrency N`
 - 🚦 **CI gate** — `promptseal ci` exits 1 on regressions and writes a GitHub step summary
@@ -227,14 +228,15 @@ deserves to be a *one-command, zero-server* experience for every developer, not 
 
 ## Status & roadmap
 
-`v0.5` — core loop (`init`/`run`/`seal`/`diff`/`report`/`runs`/`ci`), 18 assertions,
+`v0.6` — core loop (`init`/`run`/`seal`/`diff`/`report`/`runs`/`ci`), 18 assertions,
 mock + OpenAI-compatible providers, **multi-model matrix comparison**,
 **traffic recorder (`record`)**, JSON output, HTML reports, GitHub Actions gate,
 **committed self-contained baselines**, **flaky detection (`--repeat`)**, the
 **`promptseal.capture` SDK**, a **pytest plugin (`pytest --promptseal`)**,
-**agent-native cases** (`tools:` + `messages:`), **`promptseal driftwatch`**,
-**`promptseal doctor`** and **case filters & execution options**
-(`--tags/--case/--list/--fail-fast/--concurrency`).
+**agent-native cases** (`tools:` + `messages:` + scripted `script:`),
+**framework adapters (`promptseal.adapters`)**, **`promptseal driftwatch`** with
+**per-case cost percentiles**, **`promptseal doctor`** and **case filters &
+execution options** (`--tags/--case/--list/--fail-fast/--concurrency`).
 Bilingual docs: [English](README.md) | [فارسی](README.fa.md).
 See [ROADMAP.md](ROADMAP.md) for the full plan.
 Bilingual docs: [English](README.md) | [فارسی](README.fa.md).

@@ -387,6 +387,48 @@ fire), `tools_not_called`, `call_order` (relative order must hold), `tool_args`
 OpenAI-compatible tool-calling endpoint. Offline, `mock:tools` simulates an
 agent that calls `get_weather(city="Paris")` whenever `tools:` are declared.
 
+### Scripted users (`script:`)
+
+Add a `script:` of user turns — after every assistant reply the next scripted
+turn is injected, until the script runs out. The final assistant answer is what
+gets asserted; latency/cost are summed across round-trips and `turns` is
+recorded per case:
+
+```yaml
+  - id: support-handoff
+    prompt: "Where is my order?"
+    script: ["ana@example.com"]     # the scripted user answers with this
+    asserts:
+      - contains_any: ["ORD-", "order"]
+      - max_latency_s: 15
+```
+
+### Already have a trace? `promptseal.adapters`
+
+Evaluate traces from any framework with the same assertions — no SDK dependency,
+plain dicts (or duck-typed LangChain messages / OpenAI Agents `function_call`
+items):
+
+```python
+from promptseal.adapters import evaluate_conversation, evaluate_trace, tool_calls_from_agents
+
+# LangChain-style messages (dicts or message objects):
+results = evaluate_conversation(
+    asserts=[{"tools_called": "get_weather"}, {"contains": "sunny"}],
+    messages=my_langchain_messages,
+)
+
+# OpenAI Agents SDK run items:
+results = evaluate_trace(
+    asserts=[{"tool_args": {"get_weather": {"city": "Paris"}}}],
+    output="It is sunny in Paris.",
+    tool_calls=tool_calls_from_agents(run.items),
+)
+```
+
+For Claude Code, a hooks recipe: register a `Stop`/`PostToolUse` hook that shells
+out to `promptseal ci --tags changed` — the CLI gate does the rest.
+
 ## Part 12 — Watch the drift: driftwatch & doctor
 
 ```bash

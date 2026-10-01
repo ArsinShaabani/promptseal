@@ -26,7 +26,8 @@ PromptSeal ثبت می‌کنه که پرامپت‌ها *باید* چطور ر�
 - 🎥 **ضبط ترافیک واقعی** — پراکسی لوکال یا SDK ی `promptseal.capture` ترافیک اپت رو می‌گیره و خودش کیس می‌سازه
 - 🎲 **تشخیص flaky** — `--repeat N` هر کیس رو N بار اجرا می‌کنه؛ پاس فقط با آستانه‌ی آماری از تلاش‌ها
 - 🧪 **پلاگین pytest** — eval ها کنار تست‌های unit: ‏`pytest --promptseal`
-- 🤖 **Agent-native** — assertion روی tool-call ها (`tools_called`، `call_order`، `tool_args`) و کیس‌های چندنوبته با `messages:`
+- 🤖 **Agent-native** — assertion روی tool-call ها (`tools_called`، `call_order`، `tool_args`)، کیس‌های چندنوبته با `messages:` و شبیه‌سازی کاربر اسکریپت‌شده با `script:`
+- 🔌 **آداپترهای فریم‌ورک** — ‏`promptseal.adapters` ردپای LangChain / OpenAI Agents رو با همون assertion ها ارزیابی می‌کنه، بدون نیاز به SDK
 - 📈 **Driftwatch** — ‏`promptseal driftwatch`: روند pass-rate/هزینه/تأخیر در یک HTML لوکال
 - 🎛 **فیلتر و کنترل اجرا** — ‏`--tags / --case / --skip-case / --list`، ‏`--fail-fast`، ‏`--concurrency N`
 - 📦 **Local-first** — ران‌ها فایل JSON ساده‌ان؛ بدون سرور، بدون اکانت، بدون تلمتری
@@ -208,13 +209,14 @@ cases:
 
 ## وضعیت و نقشه‌راه
 
-`v0.5` — حلقه‌ی اصلی (`init`/`run`/`seal`/`diff`/`report`/`runs`/`ci`)، ۱۸ assertion،
+`v0.6` — حلقه‌ی اصلی (`init`/`run`/`seal`/`diff`/`report`/`runs`/`ci`)، ۱۸ assertion،
 provider های ماک + سازگار با OpenAI، **مقایسه‌ی ماتریسی چندمدلی**، ضبط ترافیک
 (`record`)، خروجی JSON، گزارش HTML و گیت GitHub Actions + **baseline های commit شدنی
 و مستقل**، **تشخیص flaky با `--repeat`**، **SDK ی `promptseal.capture`**،
-**پلاگین pytest (`pytest --promptseal`)**، **کیس‌های agent-native** (`tools:` و
-`messages:`)، **`promptseal driftwatch`**، **`promptseal doctor`** و
-**فیلترهای کیس و کنترل اجرا** (`--tags/--case/--list/--fail-fast/--concurrency`).
+**پلاگین pytest (`pytest --promptseal`)**، **کیس‌های agent-native** (`tools:` +
+`messages:` + اسکریپت `script:`)، **آداپترهای فریم‌ورک (`promptseal.adapters`)**،
+**`promptseal driftwatch`** با **درصد آخر هزینه هر کیس**، **`promptseal doctor`**
+و **فیلترهای کیس و کنترل اجرا** (`--tags/--case/--list/--fail-fast/--concurrency`).
 نقشه‌راه کامل: [ROADMAP.md](ROADMAP.md)
 
 ## مشارکت
