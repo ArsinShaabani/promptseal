@@ -100,7 +100,7 @@ The one-command regression loop for individual developers.
 
 ## Launch & distribution playbook
 
-> **Status: v0.2.0 is LIVE on PyPI** (2026-09-29) — `pip install promptseal` works globally.
+> **Status: v0.6.0 is LIVE on PyPI** — `pip install promptseal` works globally.
 > GitHub Release published, Discussions enabled, bilingual tutorials shipped.
 > v0.3.0: committed self-contained baselines, flaky-repeat runs, `promptseal.capture`
 > SDK, pytest plugin (`pytest --promptseal`), mkdocs-material docs site.
@@ -112,6 +112,11 @@ The one-command regression loop for individual developers.
 > v0.6.0: scripted-user simulation (`script:`), framework adapters
 > (`promptseal.adapters`), per-case cost percentiles in driftwatch —
 > **Phase 2 complete.**
+>
+> **Live now:** PyPI 0.6.0 (verified with a fresh-venv install) · GitHub Release
+> v0.6.0 · docs site https://arsinshaabani.github.io/promptseal/ (Pages:
+> legacy/gh-pages, build green) · promptseal-action v1.1.0 released and the
+> `v1` tag moved to it.
 
 1. **Assets first**: demo GIF (vhs/asciinema), landing page (GitHub Pages), docs site.
    ✅ GIF shipped (`assets/demo.gif`) · ✅ docs site shipped (`docs/`, mkdocs-material,
