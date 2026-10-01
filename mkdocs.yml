@@ -1,0 +1,31 @@
+site_name: PromptSeal
+site_description: >-
+  Regression testing for prompts, agents, and models. Know what breaks before you switch.
+site_url: https://arsinshaabani.github.io/promptseal/
+repo_url: https://github.com/ArsinShaabani/promptseal
+repo_name: ArsinShaabani/promptseal
+
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: teal
+    accent: teal
+  features:
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Tutorial (EN): tutorial.md
+  - آموزش (FA): tutorial.fa.md
+  - Roadmap: roadmap.md
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - pymdownx.superfences
+  - pymdownx.snippets:
+      base_path: ['.']
+  - tables
+  - toc:
+      permalink: true
