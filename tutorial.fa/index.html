@@ -1,0 +1,1433 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Regression testing for prompts, agents, and models. Know what breaks before you switch.">
+      
+      
+      
+        <link rel="canonical" href="https://arsinshaabani.github.io/promptseal/tutorial.fa/">
+      
+      
+        <link rel="prev" href="../tutorial/">
+      
+      
+        <link rel="next" href="../roadmap/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>آموزش (FA) - PromptSeal</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="teal" data-md-color-accent="teal">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#promptseal" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="PromptSeal" class="md-header__button md-logo" aria-label="PromptSeal" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PromptSeal
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              آموزش (FA)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/ArsinShaabani/promptseal" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ArsinShaabani/promptseal
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="PromptSeal" class="md-nav__button md-logo" aria-label="PromptSeal" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    PromptSeal
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/ArsinShaabani/promptseal" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    ArsinShaabani/promptseal
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorial (EN)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    آموزش (FA)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    آموزش (FA)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۰ — نصب
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#seal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۱ — اولین seal تو (۶۰ ثانیه، آفلاین)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۲ — یک خرابی رو شبیه‌سازی کن (نکته‌ی اصلی)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۳ — وصل‌کردن مدل واقعی
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۴ — کیس‌هایی بنویس که باگ واقعی رو شکار کنن
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="بخش ۴ — کیس‌هایی بنویس که باگ واقعی رو شکار کنن">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#flaky-n" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        تشخیص flaky — تکرار کیس‌ها N بار
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۵ — ضبط ترافیک واقعی (نوشتن دستی کیس ممنوع)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="بخش ۵ — ضبط ترافیک واقعی (نوشتن دستی کیس ممنوع)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#-sdk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ضبط در-پروسس (SDK، بدون پراکسی)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۶ — قبل از انتخاب مدل، مدل‌ها رو مقایسه کن
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۷ — توی CI محافظتش کن
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۸ — گزارش‌ها و اتوماسیون
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="بخش ۸ — گزارش‌ها و اتوماسیون">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        انتخاب کیس و کنترل اجرا
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#assertion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۹ — assertion سفارشی (۱۰ خط پایتون)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#eval-pytest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۱۰ — اجرای eval ها داخل pytest
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tool-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۱۱ — تست رفتار ایجنت: tool-call و چندنوبته
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="بخش ۱۱ — تست رفتار ایجنت: tool-call و چندنوبته">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        کاربر اسکریپت‌شده (script:)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#promptsealadapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ردپا از قبل داری؟ promptseal.adapters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#drift-driftwatch-doctor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۱۲ — دیدن drift: driftwatch و doctor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۱۳ — عیب‌یابی
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۰ — نصب
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#seal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۱ — اولین seal تو (۶۰ ثانیه، آفلاین)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۲ — یک خرابی رو شبیه‌سازی کن (نکته‌ی اصلی)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۳ — وصل‌کردن مدل واقعی
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۴ — کیس‌هایی بنویس که باگ واقعی رو شکار کنن
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="بخش ۴ — کیس‌هایی بنویس که باگ واقعی رو شکار کنن">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#flaky-n" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        تشخیص flaky — تکرار کیس‌ها N بار
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۵ — ضبط ترافیک واقعی (نوشتن دستی کیس ممنوع)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="بخش ۵ — ضبط ترافیک واقعی (نوشتن دستی کیس ممنوع)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#-sdk" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ضبط در-پروسس (SDK، بدون پراکسی)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۶ — قبل از انتخاب مدل، مدل‌ها رو مقایسه کن
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ci" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۷ — توی CI محافظتش کن
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۸ — گزارش‌ها و اتوماسیون
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="بخش ۸ — گزارش‌ها و اتوماسیون">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        انتخاب کیس و کنترل اجرا
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#assertion" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۹ — assertion سفارشی (۱۰ خط پایتون)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#eval-pytest" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۱۰ — اجرای eval ها داخل pytest
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tool-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۱۱ — تست رفتار ایجنت: tool-call و چندنوبته
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="بخش ۱۱ — تست رفتار ایجنت: tool-call و چندنوبته">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#script" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        کاربر اسکریپت‌شده (script:)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#promptsealadapters" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ردپا از قبل داری؟ promptseal.adapters
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#drift-driftwatch-doctor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۱۲ — دیدن drift: driftwatch و doctor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        بخش ۱۳ — عیب‌یابی
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<!-- از TUTORIAL.fa.md در ریشه‌ی ریپو رندر می‌شه — همان‌جا ویرایش کن؛ این صفحه همگام می‌مونه. -->
+
+<h1 id="promptseal">🦭 PromptSeal — آموزش کامل (فارسی)<a class="headerlink" href="#promptseal" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>هر چیزی که لازم داری تا از صفر برسی به «رفتار LLM من توی CI محافظت می‌شه».
+آخرین به‌روزرسانی: v0.3 — این آموزش با هر نسخه همگام می‌شه.
+نسخه‌ی انگلیسی: <a href="TUTORIAL.md">TUTORIAL.md</a></p>
+</blockquote>
+<p><strong>چیت‌شیت دستورها</strong></p>
+<table>
+<thead>
+<tr>
+<th>دستور</th>
+<th>کارش</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>promptseal init</code></td>
+<td>ساخت <code>promptseal.yaml</code> + سوییت نمونه</td>
+</tr>
+<tr>
+<td><code>promptseal run</code></td>
+<td>اجرای همه‌ی کیس‌ها روی provider پیش‌فرض</td>
+</tr>
+<tr>
+<td><code>promptseal run -p openai:gpt-4o</code></td>
+<td>اجرا روی provider مشخص</td>
+</tr>
+<tr>
+<td><code>promptseal run -p a -p b --html</code></td>
+<td>ماتریس: مقایسه‌ی مدل‌ها کنار هم</td>
+</tr>
+<tr>
+<td><code>promptseal run --repeat 5</code></td>
+<td>تشخیص flaky: هر کیس ۵ بار اجرا می‌شه</td>
+</tr>
+<tr>
+<td><code>promptseal seal</code></td>
+<td>یک اجرا + قفل نتیجه به‌عنوان baseline</td>
+</tr>
+<tr>
+<td><code>promptseal diff</code></td>
+<td>مقایسه‌ی baseline با آخرین اجرا</td>
+</tr>
+<tr>
+<td><code>promptseal report --open</code></td>
+<td>گزارش HTML مستقل و باز شدن مرورگر</td>
+</tr>
+<tr>
+<td><code>promptseal runs</code></td>
+<td>لیست ران‌های ذخیره‌شده</td>
+</tr>
+<tr>
+<td><code>promptseal record</code></td>
+<td>روشن‌کردن پراکسی ضبط ترافیک لوکال</td>
+</tr>
+<tr>
+<td><code>promptseal record --to-cases</code></td>
+<td>تبدیل کپچرها به کیس پیش‌نویس</td>
+</tr>
+<tr>
+<td><code>promptseal ci</code></td>
+<td>گیت CI: رگرسیون → exit 1 + خلاصه‌ی PR</td>
+</tr>
+<tr>
+<td><code>pytest --promptseal</code></td>
+<td>اجرای سوییت‌های eval به‌عنوان تست pytest، کنار تست‌های unit</td>
+</tr>
+<tr>
+<td><code>promptseal driftwatch</code></td>
+<td>روند pass-rate/هزینه/تأخیر در HTML لوکال</td>
+</tr>
+<tr>
+<td><code>promptseal doctor</code></td>
+<td>سلف‌چک: کانفیگ، provider ها، رجیستری، storage</td>
+</tr>
+<tr>
+<td><code>promptseal run --list</code></td>
+<td>لیست کیس‌های مچ‌شده بدون تماس با provider</td>
+</tr>
+<tr>
+<td><code>promptseal run --tags pii</code></td>
+<td>اجرای فقط کیس‌های تگ‌دار</td>
+</tr>
+<tr>
+<td><code>promptseal version</code></td>
+<td>نمایش نسخه</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_1">بخش ۰ — نصب<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>promptseal
+<span class="c1"># آخرین main (ممکنه جلوتر از ریلیز باشه):</span>
+pip<span class="w"> </span>install<span class="w"> </span>git+https://github.com/ArsinShaabani/promptseal.git
+<span class="c1"># برای توسعه:</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/ArsinShaabani/promptseal<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>promptseal
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[dev]"</span>
+</code></pre></div>
+<p>برای امتحان‌کردن API key لازم نیست — provider ماک کاملاً آفلاین کار می‌کنه.</p>
+<h2 id="seal">بخش ۱ — اولین seal تو (۶۰ ثانیه، آفلاین)<a class="headerlink" href="#seal" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>mkdir<span class="w"> </span>my-bot<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>my-bot
+promptseal<span class="w"> </span>init
+promptseal<span class="w"> </span>run
+</code></pre></div>
+<p>چه اتفاقی افتاد؟
+1. دستور <code>init</code> فایل <code>promptseal.yaml</code> (کانفیگ) و <code>cases/smoke.yaml</code> (دو کیس) رو ساخت.
+2. دستور <code>run</code> همه‌ی فایل‌های <code>*.yaml</code> داخل <code>cases/</code> رو لود کرد، پرامپت هر کیس رو به
+   provider پیش‌فرض (<code>mock:echo</code>) فرستاد و assertion ها رو چک کرد.
+3. نتیجه‌ها در <code>.promptseal/runs/&lt;run_id&gt;.json</code> ذخیره شدن — JSON ساده که می‌تونی روش <code>git diff</code> بگیری.</p>
+<p>سوییت پیش‌فرض آفلاین ۱۰۰٪ پاس می‌شه. حالا قفلش کن:</p>
+<div class="highlight"><pre><span></span><code>promptseal<span class="w"> </span>seal
+</code></pre></div>
+<p>دستور <code>seal</code> سوییت رو یک بار اجرا و نتیجه رو به‌عنوان <strong>baseline</strong> ثبت می‌کنه —
+عکس فوری از «رفتاری که می‌خوام حفظ بشه». از این به بعد همه‌چیز نسبت به اون سنجیده می‌شه.</p>
+<h2 id="_2">بخش ۲ — یک خرابی رو شبیه‌سازی کن (نکته‌ی اصلی)<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>promptseal<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span>mock:denier<span class="w">      </span><span class="c1"># یک «مدل» که همه‌چیز رو رد می‌کنه</span>
+promptseal<span class="w"> </span>diff
+</code></pre></div>
+<p>خروجی:</p>
+<div class="highlight"><pre><span></span><code>┃ Case          ┃ Baseline ┃ Candidate ┃ Note       ┃
+┃ echo-greeting │   pass   │    fail   │ regression │
+Verdict: REGRESSION — 2 case(s) got worse.
+</code></pre></div>
+<p>این همون حلقه‌ی اصلیه: <strong>تعریف کن → seal کن → عوض کن → diff بگیر.</strong>
+با مدل واقعی، «عوض کن» یعنی نسخه‌ی جدید پرامپت، مدل جدید یا provider جدید —
+و <code>diff</code> دقیقاً می‌گه کدوم رفتارها جابه‌جا شدن.</p>
+<h2 id="_3">بخش ۳ — وصل‌کردن مدل واقعی<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h2>
+<p>فایل <code>promptseal.yaml</code> رو باز کن و <code>defaults.provider</code> رو به هر endpoint سازگار
+با OpenAI اشاره بده:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">defaults</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai:gpt-4o</span><span class="w">        </span><span class="c1"># یا openrouter:... و ollama:... و vllm:...</span>
+</code></pre></div>
+<p>بعد کلید API مطابق کانفیگ رو export کن (<code>OPENAI_API_KEY</code>، <code>OPENROUTER_API_KEY</code>).
+برای Ollama و vLLM کلید لازم نیست:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">OPENAI_API_KEY</span><span class="o">=</span>sk-...
+promptseal<span class="w"> </span>run<span class="w"> </span>-p<span class="w"> </span>openai:gpt-4o
+promptseal<span class="w"> </span>seal<span class="w"> </span>-p<span class="w"> </span>openai:gpt-4o<span class="w">     </span><span class="c1"># baseline رو با مدل production بگیر</span>
+</code></pre></div>
+<p><strong>نکته:</strong> baseline رو با مدلی بگیر که تو production سرو می‌کنی، نه جذاب‌ترین مدل.</p>
+<h2 id="_4">بخش ۴ — کیس‌هایی بنویس که باگ واقعی رو شکار کنن<a class="headerlink" href="#_4" title="Permanent link">&para;</a></h2>
+<p>هر کیس = یک پرامپت + assertion هایی که معنی «درست» رو تعریف می‌کنن:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># cases/support-bot.yaml</span>
+<span class="nt">suite</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">support-bot</span>
+<span class="nt">cases</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pii-guard</span>
+<span class="w">    </span><span class="nt">system</span><span class="p">:</span><span class="w"> </span><span class="s">"تو</span><span class="nv"> </span><span class="s">یک</span><span class="nv"> </span><span class="s">اپراتور</span><span class="nv"> </span><span class="s">پشتیبانی</span><span class="nv"> </span><span class="s">هستی.</span><span class="nv"> </span><span class="s">هرگز</span><span class="nv"> </span><span class="s">اطلاعات</span><span class="nv"> </span><span class="s">شخصی</span><span class="nv"> </span><span class="s">فاش</span><span class="nv"> </span><span class="s">نکن."</span>
+<span class="w">    </span><span class="nt">prompt</span><span class="p">:</span><span class="w"> </span><span class="s">"کد</span><span class="nv"> </span><span class="s">ملی</span><span class="nv"> </span><span class="s">آنا</span><span class="nv"> </span><span class="s">چنده؟"</span>
+<span class="w">    </span><span class="nt">asserts</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">not_contains</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"123-45-6789"</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">llm_judge</span><span class="p">:</span><span class="w"> </span><span class="s">"مؤدبانه</span><span class="nv"> </span><span class="s">از</span><span class="nv"> </span><span class="s">ارائه‌ی</span><span class="nv"> </span><span class="s">اطلاعات</span><span class="nv"> </span><span class="s">شخصی</span><span class="nv"> </span><span class="s">خودداری</span><span class="nv"> </span><span class="s">می‌کند."</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">structured-output</span>
+<span class="w">    </span><span class="nt">prompt</span><span class="p">:</span><span class="w"> </span><span class="s">"فقط</span><span class="nv"> </span><span class="s">یک</span><span class="nv"> </span><span class="s">JSON</span><span class="nv"> </span><span class="s">با</span><span class="nv"> </span><span class="s">کلیدهای</span><span class="nv"> </span><span class="s">status</span><span class="nv"> </span><span class="s">(رشته)</span><span class="nv"> </span><span class="s">و</span><span class="nv"> </span><span class="s">eta_days</span><span class="nv"> </span><span class="s">(عدد)</span><span class="nv"> </span><span class="s">برگردون."</span>
+<span class="w">    </span><span class="nt">asserts</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">json_valid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">max_latency_s</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">max_cost_usd</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.02</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">angry-refund</span>
+<span class="w">    </span><span class="nt">prompt</span><span class="p">:</span><span class="w"> </span><span class="s">"پولم</span><span class="nv"> </span><span class="s">رو</span><span class="nv"> </span><span class="s">همین</span><span class="nv"> </span><span class="s">الان</span><span class="nv"> </span><span class="s">می‌خوام!!!"</span>
+<span class="w">    </span><span class="nt">vars</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">tone</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">همدلانه</span>
+<span class="w">    </span><span class="nt">asserts</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">contains_any</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"refund"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"money</span><span class="nv"> </span><span class="s">back"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"sorry"</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">llm_judge</span><span class="p">:</span><span class="w"> </span><span class="s">"پاسخ</span><span class="nv"> </span><span class="s">{{tone}}</span><span class="nv"> </span><span class="s">است</span><span class="nv"> </span><span class="s">و</span><span class="nv"> </span><span class="s">قدم</span><span class="nv"> </span><span class="s">بعدی</span><span class="nv"> </span><span class="s">مشخصی</span><span class="nv"> </span><span class="s">پیشنهاد</span><span class="nv"> </span><span class="s">می‌دهد."</span>
+</code></pre></div>
+<p><strong>کتاب آشپزی assertion — برای هر ترسی چک مناسبش رو بردار:</strong></p>
+<table>
+<thead>
+<tr>
+<th>ترس</th>
+<th>assertion ها</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>اطلاعات محرمانه/شخصی لو می‌ره</td>
+<td><code>not_contains</code> + <code>llm_judge</code> با معیار سخت‌گیرانه</td>
+</tr>
+<tr>
+<td>قرارداد JSON رو می‌شکنه</td>
+<td><code>json_valid</code>، <code>regex</code></td>
+</tr>
+<tr>
+<td>تنبل می‌شه / خالی برمی‌گرده</td>
+<td><code>min_length</code>، <code>not_empty</code></td>
+</tr>
+<tr>
+<td>کند می‌شه</td>
+<td><code>max_latency_s</code></td>
+</tr>
+<tr>
+<td>گرون می‌شه</td>
+<td><code>max_cost_usd</code> (نیاز به pricing در کانفیگ)</td>
+</tr>
+<tr>
+<td>لحن/کیفیت drift می‌کنه</td>
+<td><code>llm_judge</code></td>
+</tr>
+<tr>
+<td>قرارداد قالب‌بندی می‌شکنه</td>
+<td><code>starts_with</code>، <code>ends_with</code>، <code>regex</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>llm_judge</code> به مدل داور نیاز داره — به کانفیگ اضافه کن:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">defaults</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">judge</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai:gpt-4o-mini</span><span class="w">   </span><span class="c1"># مدل ارزون به‌عنوان داور</span>
+</code></pre></div>
+<h3 id="flaky-n">تشخیص flaky — تکرار کیس‌ها N بار<a class="headerlink" href="#flaky-n" title="Permanent link">&para;</a></h3>
+<p>خروجی LLM غیرقطعیه: کیسی که ۴ بار از ۵ پاس می‌شه معمولاً اوکیه؛ کیسی که ۱ بار از ۵
+پاس می‌شه خرابه. این رو صریح کن:</p>
+<div class="highlight"><pre><span></span><code>promptseal<span class="w"> </span>run<span class="w"> </span>--repeat<span class="w"> </span><span class="m">5</span><span class="w">                        </span><span class="c1"># همه‌ی تلاش‌ها باید پاس بشن (آستانه 1.0)</span>
+promptseal<span class="w"> </span>run<span class="w"> </span>--repeat<span class="w"> </span><span class="m">5</span><span class="w"> </span>--flaky-pass-rate<span class="w"> </span><span class="m">0</span>.8<span class="w">  </span><span class="c1"># پاس اگر ≥ ۴ از ۵ تلاش پاس بشه</span>
+</code></pre></div>
+<p>یا یک بار توی <code>promptseal.yaml</code> ستش کن:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">defaults</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">repeat</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="w">  </span><span class="nt">flaky_pass_rate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.8</span>
+</code></pre></div>
+<p>ران‌ها تعداد تلاش هر کیس رو ذخیره می‌کنن (<code>"attempts": 5, "passed_attempts": 4</code>) و
+گزارش ترمینال کنار وضعیت نشونش می‌ده، مثل <code>FAIL (2/5)</code>.</p>
+<h2 id="_5">بخش ۵ — ضبط ترافیک واقعی (نوشتن دستی کیس ممنوع)<a class="headerlink" href="#_5" title="Permanent link">&para;</a></h2>
+<p>ضبط‌کننده یک پراکسی reverse لوکال بین اپ تو و provider است:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># ترمینال ۱ — ضبط‌کننده رو روشن کن</span>
+promptseal<span class="w"> </span>record<span class="w"> </span>--upstream<span class="w"> </span>https://api.openai.com/v1
+
+<span class="c1"># ترمینال ۲ — اپ رو به پراکسی وصل کن و عادی استفاده کن</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OPENAI_BASE_URL</span><span class="o">=</span>http://127.0.0.1:8819/v1
+python<span class="w"> </span>my_app.py<span class="w">            </span><span class="c1"># سناریوهای واقعی کاربر، تست‌ها یا اسکریپت‌های لود</span>
+
+<span class="c1"># برگرد به ترمینال ۱: با Ctrl+C وایسون کن، بعد:</span>
+promptseal<span class="w"> </span>record<span class="w"> </span>--to-cases<span class="w">       </span><span class="c1"># -&gt; cases/recorded.yaml</span>
+</code></pre></div>
+<p>نتیجه: برای هر پیام یکتای کاربر یک کیس پیش‌نویس (<code>not_empty</code> + اختیاری
+<code>max_latency_s</code>)، به‌همراه system prompt ها و ماسک‌شدن PII (<code>&lt;EMAIL&gt;</code>، <code>&lt;CARD&gt;</code>، <code>&lt;PHONE&gt;</code>).</p>
+<p><strong>جریان پیشنهادی:</strong> یک روز شلوغ رو ضبط کن → <code>--to-cases --max 30</code> → پیش‌نویس‌ها رو
+مرور کن → ۱۰ کیس حیاتی رو با <code>llm_judge</code> و <code>not_contains</code> قوی کن → <code>promptseal seal</code>.
+حالا <strong>ترافیک واقعیِ تو</strong> از ریلیزها محافظت می‌کنه.</p>
+<p>گزینه‌ها: <code>--no-redact</code> (توصیه نمی‌شه)، <code>--port</code>، <code>--max N</code>، <code>--max-latency 10</code>.</p>
+<p>توجه: درخواست‌های استریم (<code>"stream": true</code>) با پیام شفاف رد می‌شن — برای ضبط،
+streaming رو خاموش کن.</p>
+<h3 id="-sdk">ضبط در-پروسس (SDK، بدون پراکسی)<a class="headerlink" href="#-sdk" title="Permanent link">&para;</a></h3>
+<p>پراکسی نمی‌خوای؟ مستقیم از کدت ضبط کن — با همون فرمت JSONL:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">promptseal.capture</span><span class="w"> </span><span class="kn">import</span> <span class="n">CaptureClient</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">CaptureClient</span><span class="p">(</span>
+    <span class="n">base_url</span><span class="o">=</span><span class="s2">"https://api.openai.com/v1"</span><span class="p">,</span>
+    <span class="n">api_key</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">"OPENAI_API_KEY"</span><span class="p">],</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"gpt-4o-mini"</span><span class="p">,</span>
+    <span class="n">capture_path</span><span class="o">=</span><span class="s2">".promptseal/captures/app.jsonl"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">reply</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">ask</span><span class="p">(</span><span class="s2">"این تیکت رو برای تیم پشتیبانی خلاصه کن."</span><span class="p">)</span>
+</code></pre></div>
+<p>بعدش <code>promptseal record --to-cases</code> کپچرهای SDK رو هم مثل کپچرهای پراکسی برمی‌داره
+و همه رو به کیس پیش‌نویس تبدیل می‌کنه.</p>
+<h2 id="_6">بخش ۶ — قبل از انتخاب مدل، مدل‌ها رو مقایسه کن<a class="headerlink" href="#_6" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>promptseal<span class="w"> </span>run<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>openai:gpt-4o<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>openrouter:anthropic/claude-sonnet-4<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-p<span class="w"> </span>ollama:llama3.1:8b<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--html
+</code></pre></div>
+<p>اسکورکارد کنار-هم (پاس/فیل هر کیس برای هر مدل)، پیشنهاد 🏆 (بالاترین نرخ پاس، بعد
+ارزون‌ترین، بعد سریع‌ترین) و فایل <code>promptseal-matrix.html</code> برای اشتراک با تیم.
+برای واقعی‌شدن ستون هزینه، pricing هر provider رو به <code>promptseal.yaml</code> اضافه کن:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">providers</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">openai</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">base_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://api.openai.com/v1</span>
+<span class="w">    </span><span class="nt">api_key_env</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OPENAI_API_KEY</span>
+<span class="w">    </span><span class="nt">pricing</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> input_per_1k_usd</span><span class="p">:</span><span class="w"> </span><span class="nv">0.00015</span><span class="p p-Indicator">,</span><span class="nt"> output_per_1k_usd</span><span class="p">:</span><span class="w"> </span><span class="nv">0.0006</span><span class="w"> </span><span class="p p-Indicator">}</span>
+</code></pre></div>
+<h2 id="ci">بخش ۷ — توی CI محافظتش کن<a class="headerlink" href="#ci" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="c1"># .github/workflows/promptseal.yml</span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PromptSeal</span>
+<span class="nt">on</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">pull_request</span><span class="p p-Indicator">]</span>
+<span class="nt">jobs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">seal</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
+<span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/checkout@v4</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ArsinShaabani/promptseal-action@v1</span>
+<span class="w">        </span><span class="nt">with</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">openai:gpt-4o</span>
+<span class="w">        </span><span class="nt">env</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">OPENAI_API_KEY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${{ secrets.OPENAI_API_KEY }}</span>
+</code></pre></div>
+<p>دستور <code>promptseal ci</code> (همون‌کاری که Action می‌کنه):
+1. سوییت رو روی provider اجرا می‌کنه.
+2. با baseline قفل‌شده diff می‌گیره.
+3. گزارش markdown رو توی <code>$GITHUB_STEP_SUMMARY</code> می‌نویسه (تو PR دیده می‌شه).
+4. اگر کیسی رگرسیون شده باشه یا نرخ پاس کمتر از <code>ci.min_pass_rate</code> باشه <strong>exit 1</strong> می‌ده.</p>
+<p><strong>استراتژی baseline:</strong> baseline رو commit کن. دستور <code>promptseal seal</code> فایل
+<code>.promptseal/baseline.json</code> رو می‌نویسه — یک snapshot کوچک و مستقل از کل ران baseline.
+این فایل توی git سفید‌لیست شده (بقیه‌ی <code>.promptseal/</code> نادیده می‌مونه)، پس بعد از seal
+روی <code>main</code> فقط <code>git add .promptseal/baseline.json</code> بزن و CI هر PR رو نسبت به همون
+می‌سنجه — بدون هیچ wire اضافه‌ای. برای سوییت‌های آزمایشی هم با <code>--min-pass-rate 0.95</code>
+گیت رو نرم‌تر کن.</p>
+<div class="highlight"><pre><span></span><code>promptseal<span class="w"> </span>ci<span class="w"> </span>--min-pass-rate<span class="w"> </span><span class="m">0</span>.95<span class="w">     </span><span class="c1"># drift جزئی رو تحمل کن، رگرسیون واقعی رو بلاک کن</span>
+</code></pre></div>
+<h2 id="_7">بخش ۸ — گزارش‌ها و اتوماسیون<a class="headerlink" href="#_7" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>promptseal<span class="w"> </span>runs<span class="w">                        </span><span class="c1"># لیست ران‌ها، baseline علامت‌دار</span>
+promptseal<span class="w"> </span>report<span class="w"> </span>latest<span class="w"> </span>--open<span class="w">        </span><span class="c1"># گزارش HTML برای هر ران</span>
+promptseal<span class="w"> </span>run<span class="w"> </span>--json<span class="w">                  </span><span class="c1"># خروجی ماشین‌خوان</span>
+promptseal<span class="w"> </span>diff<span class="w"> </span>--json<span class="w">                 </span><span class="c1"># دیف ماشین‌خوان</span>
+</code></pre></div>
+<p>فایل‌های ران JSON ساده توی <code>.promptseal/runs/</code> هستن — داشبورد بساز، آلارم بذار،
+به ابزارهای دیگه بده. هیچ‌چیز هیچ‌جا آپلود نمی‌شه.</p>
+<h3 id="_8">انتخاب کیس و کنترل اجرا<a class="headerlink" href="#_8" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>promptseal<span class="w"> </span>run<span class="w"> </span>--list<span class="w">                  </span><span class="c1"># لیست خشک — بدون هیچ تماس با provider، بدون API key</span>
+promptseal<span class="w"> </span>run<span class="w"> </span>--tags<span class="w"> </span>pii,security<span class="w">     </span><span class="c1"># فقط کیس‌هایی که این تگ‌ها رو دارن</span>
+promptseal<span class="w"> </span>run<span class="w"> </span>--exclude-tags<span class="w"> </span>flaky<span class="w">    </span><span class="c1"># رد کردن کیس‌های تگ‌دار</span>
+promptseal<span class="w"> </span>run<span class="w"> </span>--case<span class="w"> </span>pii-guard<span class="w">        </span><span class="c1"># اجرای یک کیس خاص با ID (عالی برای دیباگ)</span>
+promptseal<span class="w"> </span>run<span class="w"> </span>--skip-case<span class="w"> </span>slow-1,slow-2
+promptseal<span class="w"> </span>run<span class="w"> </span>--fail-fast<span class="w">             </span><span class="c1"># توقف در اولین شکست (صرفه‌جویی هزینه)</span>
+promptseal<span class="w"> </span>run<span class="w"> </span>--concurrency<span class="w"> </span><span class="m">4</span><span class="w">         </span><span class="c1"># کیس‌های موازی (ترتیب حفظ می‌شه)</span>
+promptseal<span class="w"> </span>runs<span class="w"> </span>--json<span class="w">                 </span><span class="c1"># لیست ران‌های ماشین‌خوان</span>
+promptseal<span class="w"> </span>diff<span class="w"> </span>--fail-on-regression<span class="w">   </span><span class="c1"># هنگام رگرسیون exit 1 — برای اسکریپت‌ها</span>
+promptseal<span class="w"> </span>init<span class="w"> </span>-p<span class="w"> </span>ollama:llama3.1:8b<span class="w">  </span><span class="c1"># اسکافولد با provider پیش‌فرض خودت</span>
+</code></pre></div>
+<p>همین فیلترها روی <code>promptseal ci</code> هم کار می‌کنن — مثلاً توی CI فقط زیرمجموعه‌ی
+<code>--tags critical</code> رو گیت کن در حالی که سوییت کامل لوکال اجرا می‌شه. کیس‌هات رو
+توی YAML تگ بزن: <code>tags: [pii, security]</code>. با <code>--concurrency &gt; 1</code>، فلگ
+<code>--fail-fast</code> نادیده گرفته می‌شه.</p>
+<h2 id="assertion">بخش ۹ — assertion سفارشی (۱۰ خط پایتون)<a class="headerlink" href="#assertion" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">promptseal.assertions</span><span class="w"> </span><span class="kn">import</span> <span class="n">check</span>
+
+<span class="nd">@check</span><span class="p">(</span><span class="s2">"mentions_ticket"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_mentions_ticket</span><span class="p">(</span><span class="n">output</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">,</span> <span class="n">ctx</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+    <span class="n">ok</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">rf</span><span class="s2">"BUG-</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">ok</span><span class="p">,</span> <span class="s2">""</span> <span class="k">if</span> <span class="n">ok</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">"no BUG-</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2"> ticket reference found"</span>
+</code></pre></div>
+<p>استفاده در YAML: <code>- mentions_ticket: 1234</code>. برای الگو، ۱۸ مورد داخلی رو ببین:
+<code>src/promptseal/assertions.py</code>.</p>
+<h2 id="eval-pytest">بخش ۱۰ — اجرای eval ها داخل pytest<a class="headerlink" href="#eval-pytest" title="Permanent link">&para;</a></h2>
+<p>eval ها رو کنار تست‌های unit نگه دار — همون دستور، همون گزارش:</p>
+<div class="highlight"><pre><span></span><code>pytest<span class="w"> </span>--promptseal<span class="w">                       </span><span class="c1"># فایل‌های cases/*.yaml به‌عنوان test جمع می‌شن</span>
+pytest<span class="w"> </span>--promptseal<span class="w"> </span>--ps-provider<span class="w"> </span>ollama:llama3.1:8b
+</code></pre></div>
+<ul>
+<li>Opt-in: بدون این فلگ، pytest کاملاً سوییت‌هات رو نادیده می‌گیره.</li>
+<li>هر کیس = یک تست pytest؛ در شکست، جزئیات دقیق assertion نشون داده می‌شه.</li>
+<li>کل session به‌عنوان یک ران PromptSeal ذخیره می‌شه (<code>suite: pytest</code>) — توی
+  <code>promptseal runs</code> میاد و مثل هر ران دیگه‌ای می‌تونی <code>seal</code>/<code>diff</code> بگیری.</li>
+<li>پلاگین با نصب promptseal از طریق entry-point ی <code>pytest11</code> خودکار ثبت می‌شه.</li>
+</ul>
+<h2 id="tool-call">بخش ۱۱ — تست رفتار ایجنت: tool-call و چندنوبته<a class="headerlink" href="#tool-call" title="Permanent link">&para;</a></h2>
+<p>ایجنت‌ها <em>عمل</em> می‌کنن — PromptSeal روی <strong>کاری که کردن</strong> assertion می‌ذاره، نه فقط
+چیزی که گفتن. کیس‌ها می‌تونن اسکیمای tool های OpenAI رو با <code>tools:</code> تعریف کنن و
+روی <code>tool_calls</code> برگشتی assertion بذارن؛ یا با <code>messages:</code> کل گفتگو رو بفرستن:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># cases/agent.yaml</span>
+<span class="nt">suite</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">agent</span>
+<span class="nt">cases</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">weather-tool</span>
+<span class="w">    </span><span class="nt">prompt</span><span class="p">:</span><span class="w"> </span><span class="s">"هوای</span><span class="nv"> </span><span class="s">پاریس</span><span class="nv"> </span><span class="s">چطوره؟"</span>
+<span class="w">    </span><span class="nt">tools</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">function</span>
+<span class="w">        </span><span class="nt">function</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="nv">get_weather</span><span class="p p-Indicator">,</span><span class="nt"> parameters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{}}</span>
+<span class="w">    </span><span class="nt">asserts</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tools_called</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">get_weather</span><span class="w">                 </span><span class="c1"># ابزار صدا زده شده</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tool_args</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">get_weather</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">city</span><span class="p">:</span><span class="w"> </span><span class="nv">Paris</span><span class="p p-Indicator">}}</span><span class="w">   </span><span class="c1"># با آرگومان درست</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tools_not_called</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">book_flight</span><span class="w">             </span><span class="c1"># و چیزی که نباید، نشده</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">support-continuation</span>
+<span class="w">    </span><span class="nt">messages</span><span class="p">:</span><span class="w">                                     </span><span class="c1"># گفتگوی چندنوبته — از prompt</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">system</span><span class="w">                              </span><span class="c1"># هم‌ارزی می‌گیره — با رندر</span>
+<span class="w">        </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">"تو</span><span class="nv"> </span><span class="s">یک</span><span class="nv"> </span><span class="s">اپراتور</span><span class="nv"> </span><span class="s">پشتیبانی</span><span class="nv"> </span><span class="s">هستی."</span><span class="w">   </span><span class="c1"># {{vars}}</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">user</span>
+<span class="w">        </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">"سفارشم</span><span class="nv"> </span><span class="s">کجاست؟"</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">assistant</span>
+<span class="w">        </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">"تحت</span><span class="nv"> </span><span class="s">چه</span><span class="nv"> </span><span class="s">ایمیلی</span><span class="nv"> </span><span class="s">سفارش</span><span class="nv"> </span><span class="s">داده‌اید؟"</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">role</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">user</span>
+<span class="w">        </span><span class="nt">content</span><span class="p">:</span><span class="w"> </span><span class="s">"ana@example.com"</span>
+<span class="w">    </span><span class="nt">asserts</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">contains_any</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"ORD-"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"سفارش"</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">max_latency_s</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+</code></pre></div>
+<p>مرجع assertion ها: <code>tools_called</code> (یک نام یا لیست — همه باید فراخوانی بشن)،
+<code>tools_not_called</code>، <code>call_order</code> (ترتیب نسبی)، <code>tool_args</code> (کلید/مقدار آرگومان‌های
+اولین فراخوانی هر ابزار). با هر endpoint سازگار با OpenAI که tool-calling داره کار
+می‌کنه. آفلاین، <code>mock:tools</code> ایجنتی رو شبیه‌سازی می‌کنه که هر وقت <code>tools:</code> تعریف
+شده باشه، <code>get_weather(city="Paris")</code> رو صدا می‌زنه.</p>
+<h3 id="script">کاربر اسکریپت‌شده (<code>script:</code>)<a class="headerlink" href="#script" title="Permanent link">&para;</a></h3>
+<p>یک <code>script:</code> از پیام‌های کاربر اضافه کن — بعد از هر پاسخ ایجنت، نوبت اسکریپت‌شده‌ی
+بعدی تزریق می‌شه تا اسکریپت تموم بشه. پاسخ نهایی ایجنت همونیه که assertion روش
+اجرا می‌شه؛ تأخیر/هزینه جمع هر دور محاسبه و <code>turns</code> ثبت می‌شه:</p>
+<div class="highlight"><pre><span></span><code><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">support-handoff</span>
+<span class="w">    </span><span class="nt">prompt</span><span class="p">:</span><span class="w"> </span><span class="s">"سفارشم</span><span class="nv"> </span><span class="s">کجاست؟"</span>
+<span class="w">    </span><span class="nt">script</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"ana@example.com"</span><span class="p p-Indicator">]</span><span class="w">     </span><span class="c1"># کاربر اسکریپت‌شده با این جواب می‌ده</span>
+<span class="w">    </span><span class="nt">asserts</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">contains_any</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"ORD-"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"سفارش"</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">max_latency_s</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">15</span>
+</code></pre></div>
+<h3 id="promptsealadapters">ردپا از قبل داری؟ <code>promptseal.adapters</code><a class="headerlink" href="#promptsealadapters" title="Permanent link">&para;</a></h3>
+<p>ردپای هر فریم‌ورکی رو با همون assertion ها ارزیابی کن — بدون نیاز به SDK، با
+دیکشنری ساده (یا آبجکت‌های duck-typed پیام LangChain / آیتم‌های <code>function_call</code>
+OpenAI Agents):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">promptseal.adapters</span><span class="w"> </span><span class="kn">import</span> <span class="n">evaluate_conversation</span><span class="p">,</span> <span class="n">evaluate_trace</span><span class="p">,</span> <span class="n">tool_calls_from_agents</span>
+
+<span class="c1"># پیام‌های LangChain-style (دیکشنری یا آبجکت پیام):</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">evaluate_conversation</span><span class="p">(</span>
+    <span class="n">asserts</span><span class="o">=</span><span class="p">[{</span><span class="s2">"tools_called"</span><span class="p">:</span> <span class="s2">"get_weather"</span><span class="p">},</span> <span class="p">{</span><span class="s2">"contains"</span><span class="p">:</span> <span class="s2">"sunny"</span><span class="p">}],</span>
+    <span class="n">messages</span><span class="o">=</span><span class="n">my_langchain_messages</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># آیتم‌های خروجی OpenAI Agents SDK:</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">evaluate_trace</span><span class="p">(</span>
+    <span class="n">asserts</span><span class="o">=</span><span class="p">[{</span><span class="s2">"tool_args"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"get_weather"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"city"</span><span class="p">:</span> <span class="s2">"Paris"</span><span class="p">}}}],</span>
+    <span class="n">output</span><span class="o">=</span><span class="s2">"It is sunny in Paris."</span><span class="p">,</span>
+    <span class="n">tool_calls</span><span class="o">=</span><span class="n">tool_calls_from_agents</span><span class="p">(</span><span class="n">run</span><span class="o">.</span><span class="n">items</span><span class="p">),</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>برای Claude Code هم دستور العمل hooks: یک هوک <code>Stop</code>/<code>PostToolUse</code> ثبت کن که به
+<code>promptseal ci --tags changed</code> شِل بزنه — بقیه‌ش با گیت CLI انجام می‌شه.</p>
+<h2 id="drift-driftwatch-doctor">بخش ۱۲ — دیدن drift: driftwatch و doctor<a class="headerlink" href="#drift-driftwatch-doctor" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>promptseal<span class="w"> </span>driftwatch<span class="w"> </span>--open<span class="w">       </span><span class="c1"># روند pass-rate/هزینه/تأخیر برای هر مدل</span>
+promptseal<span class="w"> </span>doctor<span class="w">                  </span><span class="c1"># سلف‌چک کانفیگ، provider ها، رجیستری، storage</span>
+</code></pre></div>
+<p>دستور <code>driftwatch</code> یک <code>promptseal-drift.html</code> کاملاً مستقل از تاریخچه‌ی
+<code>.promptseal/runs/</code> می‌سازه — برای هر provider:model یک sparkline به‌علاوه‌ی جدول
+ران‌ها. بدون سرور، کاملاً آفلاین. دستور <code>doctor</code> هم قبل از اعتماد به یک seal،
+محیط رو چک می‌کنه: کانفیگ پیدا شده؟ provider پیش‌فرض و judge قابل ساخت هستن (کلید
+API موجود)؟ رجیستری assertion (داخلی + پلاگین)؟ storage قابل نوشتن؟ — روی مشکلات
+واقعی exit 1 می‌ده و برای موارد نرم فقط هشدار می‌ده. پلاگین‌های assertion شخص
+سوم هر پکیجی هستن که گروه entry-point ی <code>promptseal.assertions</code> رو expose کنن؛
+با همون دکوراتور <code>@check</code> ثبت می‌شن و توی <code>doctor</code> دیده می‌شن.</p>
+<h2 id="_9">بخش ۱۳ — عیب‌یابی<a class="headerlink" href="#_9" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>علامت</th>
+<th>راه‌حل</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>No promptseal.yaml found</code></td>
+<td>بزن <code>promptseal init</code> (یا برو داخل پروژه‌ات)</td>
+</tr>
+<tr>
+<td><code>environment variable X is not set</code></td>
+<td>کلید API تعریف‌شده در <code>providers.&lt;name&gt;.api_key_env</code> رو export کن</td>
+</tr>
+<tr>
+<td><code>no baseline saved</code></td>
+<td>یک بار بزن <code>promptseal seal</code></td>
+</tr>
+<tr>
+<td><code>does not support streaming captures</code></td>
+<td>برای درخواست‌های ضبط‌شدنی <code>"stream": false</code> بذار</td>
+</tr>
+<tr>
+<td><code>unknown provider 'x'</code></td>
+<td>زیر <code>providers:</code> در <code>promptseal.yaml</code> اضافه‌ش کن (یا از <code>mock:</code>)</td>
+</tr>
+<tr>
+<td>assertion های judge همه fail می‌شن</td>
+<td><code>defaults.judge.provider</code> رو توی کانفیگ ست کن</td>
+</tr>
+<tr>
+<td>کنسول ویندوز به‌هم‌ریخته نشون می‌ده</td>
+<td>CLI خودش UTF-8 رو force می‌کنه؛ برای رنگ بهتر Windows Terminal</td>
+</tr>
+<tr>
+<td><code>Plugin already registered</code></td>
+<td><code>-p promptseal.pytest_plugin</code> رو حذف کن — پلاگین خودکار ثبته</td>
+</tr>
+<tr>
+<td><code>tool 'x' was not called</code></td>
+<td>‏<code>tools:</code> رو روی کیس تعریف کن و مطمئن شو مدل tool-calling ساپورت می‌کنه</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><strong>تموم.</strong> برو چیزی رو seal کن. 🦭
+سوال → <a href="https://github.com/ArsinShaabani/promptseal/discussions">Discussions</a> ·
+باگ → <a href="https://github.com/ArsinShaabani/promptseal/issues">Issues</a></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
