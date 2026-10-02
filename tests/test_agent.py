@@ -134,6 +134,98 @@ def test_loader_accepts_messages_without_prompt(tmp_path):
     assert suite.cases[0].messages[0]["content"] == "hi"
 
 
+def _write_yaml(path, data):
+    path.write_text(yaml.safe_dump(data), encoding="utf-8")
+
+
+def test_extends_inherits_and_overrides(tmp_path):
+    _write_yaml(
+        tmp_path / "base.yaml",
+        {
+            "suite": "org-baseline",
+            "cases": [
+                {"id": "common-1", "prompt": "p1", "asserts": [{"contains": "Echo"}]},
+                {"id": "common-2", "prompt": "p2", "asserts": [{"contains": "Echo"}]},
+            ],
+        },
+    )
+    _write_yaml(
+        tmp_path / "child.yaml",
+        {
+            "extends": "base.yaml",
+            "cases": [
+                {"id": "common-2", "prompt": "tightened", "asserts": [{"equals": "Echo: tightened"}]},
+                {"id": "child-only", "prompt": "p3", "asserts": [{"contains": "Echo"}]},
+            ],
+        },
+    )
+    child = load_suite_file(tmp_path / "child.yaml")
+    ids = [c.id for c in child.cases]
+    assert ids == ["common-1", "common-2", "child-only"]  # parent order, child override
+    assert child.name == "org-baseline"  # inherited when unset
+    override = next(c for c in child.cases if c.id == "common-2")
+    assert override.prompt == "tightened"
+
+
+def test_extends_missing_target_raises(tmp_path):
+    _write_yaml(tmp_path / "orphan.yaml", {"extends": "nope.yaml", "cases": []})
+    try:
+        load_suite_file(tmp_path / "orphan.yaml")
+    except FileNotFoundError as exc:
+        assert "extends" in str(exc)
+    else:
+        raise AssertionError("expected FileNotFoundError")
+
+
+def test_extends_cycle_raises(tmp_path):
+    _write_yaml(tmp_path / "a.yaml", {"extends": "b.yaml", "cases": []})
+    _write_yaml(tmp_path / "b.yaml", {"extends": "a.yaml", "cases": []})
+    try:
+        load_suite_file(tmp_path / "a.yaml")
+    except ValueError as exc:
+        assert "cycle" in str(exc)
+    else:
+        raise AssertionError("expected ValueError")
+
+
+def test_extends_end_to_end_run(tmp_path):
+    from promptseal.config import AppConfig
+    from promptseal.runner import run_cases
+
+    _write_yaml(
+        tmp_path / "base.yaml",
+        {"suite": "shared", "cases": [{"id": "from-base", "prompt": "hi", "asserts": [{"contains": "Echo"}]}]},
+    )
+    _write_yaml(
+        tmp_path / "app.yaml",
+        {
+            "extends": "base.yaml",
+            "suite": "app",
+            "cases": [{"id": "own", "prompt": "yo", "asserts": [{"contains": "Echo"}]}],
+        },
+    )
+    suite = load_suite_file(tmp_path / "app.yaml")
+    provider = get_provider("mock:echo", AppConfig())
+    run = run_cases(suite.cases, suite.name, provider)
+    assert run.summary.passed == 2
+
+
+def test_extended_base_not_loaded_standalone(tmp_path):
+    from promptseal.runner import load_suites
+
+    _write_yaml(
+        tmp_path / "base.yaml",
+        {"suite": "b", "cases": [{"id": "bc", "prompt": "p", "asserts": [{"contains": "Echo"}]}]},
+    )
+    _write_yaml(
+        tmp_path / "child.yaml",
+        {"extends": "base.yaml", "cases": [{"id": "cc", "prompt": "p", "asserts": [{"contains": "Echo"}]}]},
+    )
+    suites = load_suites(tmp_path)
+    assert len(suites) == 1  # base merged into child, not a second standalone suite
+    assert [c.id for c in suites[0].cases] == ["bc", "cc"]
+
+
 def test_scripted_user_simulation():
     provider = get_provider("mock:echo", AppConfig())
     case = Case(

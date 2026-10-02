@@ -47,6 +47,8 @@ class JudgeConfig:
 class CIConfig:
     min_pass_rate: float = 1.0
     fail_on_regression: bool = True
+    # POSTed on every ci run (verdict, pass rate, regressions) — Slack/Discord/generic.
+    alert_webhook: Optional[str] = None
 
 
 @dataclass
@@ -119,5 +121,6 @@ def load_config(path: Optional[Path] = None) -> AppConfig:
     cfg.ci = CIConfig(
         min_pass_rate=float(ci_raw.get("min_pass_rate", 1.0)),
         fail_on_regression=bool(ci_raw.get("fail_on_regression", True)),
+        alert_webhook=ci_raw.get("alert_webhook") or None,
     )
     return cfg

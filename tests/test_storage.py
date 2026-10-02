@@ -71,3 +71,22 @@ def test_unique_run_id_suffixes_on_collision(tmp_path):
     assert second.meta.run_id == "dup-2"
     storage.save_run(second, tmp_path)
     assert len(storage.list_runs(tmp_path)) == 2
+
+
+def test_promptseal_home_env_relocates_store(tmp_path, monkeypatch):
+    monkeypatch.setenv("PROMPTSEAL_HOME", str(tmp_path / "shared"))
+    run = _run("home-1")
+    storage.save_run(run, root=tmp_path / "elsewhere")  # root ignored when env set
+    assert (tmp_path / "shared" / "runs").exists()
+    assert len(storage.list_runs(tmp_path / "elsewhere")) == 1
+
+
+def test_audit_roundtrip(tmp_path):
+    storage.append_audit("seal", root=tmp_path, run_id="r1", provider="mock:m")
+    storage.append_audit("diff", root=tmp_path, verdict="pass")
+    assert (tmp_path / ".promptseal" / "audit.log").exists()
+    events = storage.read_audit(root=tmp_path)
+    assert [e["event"] for e in events] == ["diff", "seal"]  # newest first
+    assert events[0]["verdict"] == "pass"
+    assert storage.read_audit(root=tmp_path, limit=1)[0]["event"] == "diff"
+    assert storage.read_audit(root=tmp_path / "nowhere") == []

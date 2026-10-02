@@ -59,11 +59,20 @@ class CaseFilter:
         )
 
 
-def load_suite_file(path: Path) -> Suite:
-    """Load a single suite YAML file."""
+def load_suite_file(path: Path, _seen: Optional[frozenset] = None) -> Suite:
+    """Load a suite YAML file, resolving `extends:` inheritance chains.
+
+    `extends: base.yaml` (relative to this file) inherits the parent's suite
+    name/description and cases; a child case with the same id overrides the
+    parent's. Chains are supported; cycles raise ValueError.
+    """
+    _seen = _seen if _seen is not None else frozenset()
+    key = str(path.resolve())
+    if key in _seen:
+        raise ValueError(f"extends cycle detected at: {path}")
     raw = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    raw_cases = raw.get("cases") or []
     cases: list[Case] = []
+    raw_cases = raw.get("cases") or []
     for i, rc in enumerate(raw_cases):
         if not isinstance(rc, dict) or "id" not in rc or ("prompt" not in rc and "messages" not in rc):
             raise ValueError(
@@ -84,22 +93,56 @@ def load_suite_file(path: Path) -> Suite:
                 script=rc.get("script"),
             )
         )
+    name = raw.get("suite")
+    description = raw.get("description")
+    parent_ref = raw.get("extends")
+    if parent_ref:
+        parent_path = (path.parent / str(parent_ref)).resolve()
+        if not parent_path.exists():
+            raise FileNotFoundError(f"extends target not found: {parent_path}")
+        parent = load_suite_file(parent_path, _seen | {key})
+        child_ids = {c.id for c in cases}
+        cases = [c for c in parent.cases if c.id not in child_ids] + cases
+        name = name or parent.name
+        description = description or parent.description
     return Suite(
-        name=str(raw.get("suite") or path.stem),
+        name=str(name or path.stem),
         source_file=str(path),
-        description=raw.get("description"),
+        description=description,
         cases=cases,
     )
 
 
 def load_suites(cases_dir: Path) -> list[Suite]:
-    """Load every *.yaml / *.yml file in cases_dir as a suite."""
+    """Load every *.yaml / *.yml file in cases_dir as a suite.
+
+    A file that another file in the same directory extends is not loaded as a
+    standalone suite — it is already merged into its child(ren).
+    """
     if not cases_dir.exists():
         raise FileNotFoundError(f"cases directory not found: {cases_dir}")
     files = sorted([*cases_dir.glob("*.yaml"), *cases_dir.glob("*.yml")])
     if not files:
         raise FileNotFoundError(f"no suite files (*.yaml) found in {cases_dir}")
-    return [load_suite_file(path) for path in files]
+
+    raws: dict[Path, dict] = {}
+    for f in files:
+        try:
+            raws[f] = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
+        except yaml.YAMLError:
+            raws[f] = {}  # let load_suite_file raise the real error later
+
+    extended: set[Path] = set()
+    for f, raw in raws.items():
+        ref = raw.get("extends")
+        if ref:
+            extended.add((f.parent / str(ref)).resolve())
+
+    return [
+        load_suite_file(f)
+        for f in files
+        if f.resolve() not in extended
+    ]
 
 
 def _render(text: str, variables: dict) -> str:

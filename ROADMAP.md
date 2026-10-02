@@ -112,6 +112,9 @@ The one-command regression loop for individual developers.
 > v0.6.0: scripted-user simulation (`script:`), framework adapters
 > (`promptseal.adapters`), per-case cost percentiles in driftwatch —
 > **Phase 2 complete.**
+> v0.7.0 — **Phase 3 features**: `extends:` suite inheritance, `PROMPTSEAL_HOME`
+> shared storage, `promptseal audit`, `promptseal server` (read-only local
+> dashboard/API), `ci.alert_webhook` drift alerts.
 >
 > **Live now:** PyPI 0.6.0 (verified with a fresh-venv install) · GitHub Release
 > v0.6.0 · docs site https://arsinshaabani.github.io/promptseal/ (Pages:

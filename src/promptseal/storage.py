@@ -1,18 +1,27 @@
-"""Run persistence: git-friendly JSON files under .promptseal/runs/."""
+"""Run persistence: git-friendly JSON files under .promptseal/ (or $PROMPTSEAL_HOME)."""
 
 from __future__ import annotations
 
 import json
+import os
+from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 from promptseal.models import Run
 
 BASE_DIRNAME = ".promptseal"
 RUNS_DIRNAME = "runs"
 BASELINE_FILENAME = "baseline.json"
+AUDIT_FILENAME = "audit.log"
 
 
 def base_dir(root: Path | None = None) -> Path:
+    """Storage root: $PROMPTSEAL_HOME when set (shared/monorepo baselines),
+    otherwise <root or cwd>/.promptseal."""
+    home = os.environ.get("PROMPTSEAL_HOME")
+    if home:
+        return Path(home).expanduser()
     return (root or Path.cwd()) / BASE_DIRNAME
 
 
@@ -88,6 +97,38 @@ def load_baseline_run(root: Path | None = None) -> Run | None:
         return Run.model_validate(raw)
     except Exception:  # noqa: BLE001 — a corrupt snapshot behaves like "no snapshot"
         return None
+
+
+def read_audit(root: Path | None = None, limit: int = 50) -> list[dict[str, Any]]:
+    """Read the audit log, newest first, skipping corrupt lines."""
+    path = base_dir(root) / AUDIT_FILENAME
+    if not path.exists():
+        return []
+    out: list[dict[str, Any]] = []
+    for line in reversed(path.read_text(encoding="utf-8").splitlines()):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            out.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+        if len(out) >= limit:
+            break
+    return out
+
+
+def append_audit(event: str, root: Path | None = None, **details: Any) -> None:
+    """Append an event to the append-only audit log (.promptseal/audit.log, JSONL)."""
+    path = base_dir(root) / AUDIT_FILENAME
+    path.parent.mkdir(parents=True, exist_ok=True)
+    entry: dict[str, Any] = {
+        "ts": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "event": event,
+    }
+    entry.update(details)
+    with open(path, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps(entry, ensure_ascii=False) + "\n")
 
 
 def unique_run_id(run_id: str, root: Path | None = None) -> str:

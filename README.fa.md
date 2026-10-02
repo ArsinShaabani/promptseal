@@ -30,6 +30,7 @@ PromptSeal ثبت می‌کنه که پرامپت‌ها *باید* چطور ر�
 - 🔌 **آداپترهای فریم‌ورک** — ‏`promptseal.adapters` ردپای LangChain / OpenAI Agents رو با همون assertion ها ارزیابی می‌کنه، بدون نیاز به SDK
 - 📈 **Driftwatch** — ‏`promptseal driftwatch`: روند pass-rate/هزینه/تأخیر در یک HTML لوکال
 - 🎛 **فیلتر و کنترل اجرا** — ‏`--tags / --case / --skip-case / --list`، ‏`--fail-fast`، ‏`--concurrency N`
+- 🏢 **تیم و مقیاس (فاز ۳)** — وراثت سوییت با `extends:`، ‏`$PROMPTSEAL_HOME` برای storage مشترک، لاگ `promptseal audit`، ‏`promptseal server` (وب‌UI/API فقط-خواندنی)، هشدارهای drift با webhook
 - 📦 **Local-first** — ران‌ها فایل JSON ساده‌ان؛ بدون سرور، بدون اکانت، بدون تلمتری
 
 ## شروع سریع (۳۰ ثانیه، بدون API key)
@@ -209,14 +210,16 @@ cases:
 
 ## وضعیت و نقشه‌راه
 
-`v0.6` — حلقه‌ی اصلی (`init`/`run`/`seal`/`diff`/`report`/`runs`/`ci`)، ۱۸ assertion،
+`v0.7` — حلقه‌ی اصلی (`init`/`run`/`seal`/`diff`/`report`/`runs`/`ci`)، ۱۸ assertion،
 provider های ماک + سازگار با OpenAI، **مقایسه‌ی ماتریسی چندمدلی**، ضبط ترافیک
 (`record`)، خروجی JSON، گزارش HTML و گیت GitHub Actions + **baseline های commit شدنی
 و مستقل**، **تشخیص flaky با `--repeat`**، **SDK ی `promptseal.capture`**،
 **پلاگین pytest (`pytest --promptseal`)**، **کیس‌های agent-native** (`tools:` +
 `messages:` + اسکریپت `script:`)، **آداپترهای فریم‌ورک (`promptseal.adapters`)**،
-**`promptseal driftwatch`** با **درصد آخر هزینه هر کیس**، **`promptseal doctor`**
-و **فیلترهای کیس و کنترل اجرا** (`--tags/--case/--list/--fail-fast/--concurrency`).
+**`promptseal driftwatch`** با **درصدآخر هزینه هر کیس**، **`promptseal doctor`**،
+**فیلترهای کیس و کنترل اجرا** (`--tags/--case/--list/--fail-fast/--concurrency`)
+و **ویژگی‌های تیمی فاز ۳**: وراثت `extends:`، ‏`$PROMPTSEAL_HOME`،
+`promptseal audit`، ‏`promptseal server` و هشدار `ci.alert_webhook`.
 نقشه‌راه کامل: [ROADMAP.md](ROADMAP.md)
 
 ## مشارکت

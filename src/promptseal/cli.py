@@ -12,13 +12,14 @@ from pathlib import Path
 from typing import Optional
 
 import typer
+import httpx
 from rich.console import Console
 from rich.table import Table
 
 from promptseal import assertions, driftwatch as driftwatch_mod
 from promptseal import record as record_mod
 from promptseal import report as report_mod
-from promptseal import report_html, storage
+from promptseal import report_html, server as server_mod, storage
 from promptseal._version import __version__
 from promptseal.config import find_config, load_config
 from promptseal.diff import DiffReport, diff_runs
@@ -166,6 +167,12 @@ def _run_single(
         if save_baseline:
             # Embed the full run so baseline.json is self-contained (CI-friendly).
             storage.save_baseline(run_result.meta.run_id, run=run_result)
+            storage.append_audit(
+                "seal",
+                run_id=run_result.meta.run_id,
+                provider=f"{run_result.meta.provider}:{run_result.meta.model}",
+                suite=run_result.meta.suite,
+            )
             console.print(f"   [green]baseline sealed:[/] {run_result.meta.run_id}")
     if fail_on_failure and run_result.summary.pass_rate < 1.0:
         raise typer.Exit(1)
@@ -271,6 +278,12 @@ def run(
         if save_baseline:
             # In matrix mode the first listed provider is treated as the reference model.
             storage.save_baseline(runs[0].meta.run_id, run=runs[0])
+            storage.append_audit(
+                "seal",
+                run_id=runs[0].meta.run_id,
+                provider=f"{runs[0].meta.provider}:{runs[0].meta.model}",
+                suite=runs[0].meta.suite,
+            )
             console.print(f"   [green]baseline sealed:[/] {runs[0].meta.run_id}")
     except typer.Exit:
         raise
@@ -420,6 +433,14 @@ def diff(
         console.print(f"[red]{exc}[/]")
         raise typer.Exit(1)
     report = diff_runs(base_run, cand_run)
+    storage.append_audit(
+        "diff",
+        baseline=report.baseline_run_id,
+        candidate=report.candidate_run_id,
+        verdict=report.verdict,
+        regressions=len(report.regressions),
+        improvements=len(report.improvements),
+    )
     if json_out:
         typer.echo(json.dumps(_diff_to_dict(report), indent=2))
     else:
@@ -571,6 +592,50 @@ def doctor() -> None:
 
 
 @app.command()
+def audit(
+    limit: int = typer.Option(20, "--limit", "-n", help="Show the last N events"),
+) -> None:
+    """Show the local audit log (seal / diff / ci events, newest last)."""
+    events = storage.read_audit(limit=limit)
+    if not events:
+        console.print("[yellow]Audit log is empty — seal or run `ci` first.[/]")
+        return
+    table = Table(show_header=True, header_style="bold")
+    table.add_column("Time", style="cyan")
+    table.add_column("Event", justify="center")
+    table.add_column("Details", overflow="fold")
+    for event in reversed(events):  # chronological order in the table
+        details = {k: v for k, v in event.items() if k not in ("ts", "event")}
+        table.add_row(
+            str(event.get("ts", "?")),
+            str(event.get("event", "?")),
+            json.dumps(details, ensure_ascii=False)[:200],
+        )
+    console.print(table)
+
+
+@app.command()
+def server(
+    port: int = typer.Option(8800, "--port", help="Local port (binds to 127.0.0.1 only)"),
+    root: Path = typer.Option(Path.cwd(), "--root", help="Project root containing .promptseal/"),
+) -> None:
+    """Serve a read-only local dashboard + JSON API over your run history."""
+    srv = server_mod.PromptSealServer(root=root, port=port).start()
+    console.print("🦭 [bold]PromptSeal server is running (read-only).[/]")
+    console.print(f"   dashboard:  [cyan]{srv.base_url}/[/cyan]")
+    console.print(f"   api:        [cyan]{srv.base_url}/api/runs[/cyan] · /api/stats · /api/health")
+    console.print(f"   root:       [dim]{srv.root}[/dim]")
+    console.print("\nPress [bold]Ctrl+C[/] to stop.")
+    try:
+        while True:
+            time.sleep(0.5)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        srv.shutdown()
+
+
+@app.command()
 def ci(
     provider: Optional[str] = typer.Option(None, "--provider", "-p", help="Provider override"),
     min_pass_rate: Optional[float] = typer.Option(
@@ -646,6 +711,36 @@ def ci(
             f"< required {config.ci.min_pass_rate:.0%}[/]"
         )
         failed = True
+
+    storage.append_audit(
+        "ci",
+        suite=config.suite,
+        run_id=run_result.meta.run_id,
+        verdict=diff.verdict,
+        pass_rate=round(run_result.summary.pass_rate, 4),
+        regressions=len(diff.regressions),
+        failed=failed,
+    )
+
+    webhook = config.ci.alert_webhook
+    if webhook:
+        payload = {
+            "event": "promptseal_ci",
+            "suite": config.suite,
+            "provider": f"{run_result.meta.provider}:{run_result.meta.model}",
+            "run_id": run_result.meta.run_id,
+            "pass_rate": round(run_result.summary.pass_rate, 4),
+            "verdict": diff.verdict,
+            "regressions": len(diff.regressions),
+            "improvements": len(diff.improvements),
+            "failed": failed,
+        }
+        try:
+            httpx.post(webhook, json=payload, timeout=10.0)
+            console.print("   [dim]webhook alert sent.[/]")
+        except Exception as exc:  # noqa: BLE001 — alerting must never break the gate
+            console.print(f"[yellow]webhook alert failed: {exc}[/]")
+
     if failed:
         raise typer.Exit(1)
     console.print("[green]🦭 Sealed. No regressions detected.[/]")
