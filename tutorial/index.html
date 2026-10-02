@@ -469,10 +469,93 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#part-9-custom-assertions-10-lines-of-python" class="md-nav__link">
+  <a href="#part-9-teams-scale-phase-3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Part 9 — Custom assertions (10 lines of Python)
+        Part 9 — Teams &amp; scale (Phase 3)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 9 — Teams &amp; scale (Phase 3)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#suite-inheritance-for-monorepos-extends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Suite inheritance for monorepos (extends:)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shared-storage-promptseal_home" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared storage (PROMPTSEAL_HOME)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#audit-log-promptseal-audit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Audit log (promptseal audit)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#read-only-dashboard-promptseal-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Read-only dashboard (promptseal server)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#drift-alerts-webhook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Drift alerts (webhook)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#self-hosting-soc2-friendly-posture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Self-hosting / SOC2-friendly posture
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-10-custom-assertions-10-lines-of-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 10 — Custom assertions (10 lines of Python)
       
     </span>
   </a>
@@ -790,10 +873,93 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#part-9-custom-assertions-10-lines-of-python" class="md-nav__link">
+  <a href="#part-9-teams-scale-phase-3" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Part 9 — Custom assertions (10 lines of Python)
+        Part 9 — Teams &amp; scale (Phase 3)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 9 — Teams &amp; scale (Phase 3)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#suite-inheritance-for-monorepos-extends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Suite inheritance for monorepos (extends:)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shared-storage-promptseal_home" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Shared storage (PROMPTSEAL_HOME)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#audit-log-promptseal-audit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Audit log (promptseal audit)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#read-only-dashboard-promptseal-server" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Read-only dashboard (promptseal server)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#drift-alerts-webhook" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Drift alerts (webhook)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#self-hosting-soc2-friendly-posture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Self-hosting / SOC2-friendly posture
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-10-custom-assertions-10-lines-of-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 10 — Custom assertions (10 lines of Python)
       
     </span>
   </a>
@@ -967,6 +1133,14 @@ Last updated: v0.3. This tutorial is kept in sync with every release.</p>
 <tr>
 <td><code>promptseal doctor</code></td>
 <td>Self-check: config, providers, registry, storage</td>
+</tr>
+<tr>
+<td><code>promptseal audit</code></td>
+<td>Show the local seal/diff/ci audit log</td>
+</tr>
+<tr>
+<td><code>promptseal server</code></td>
+<td>Read-only local dashboard + JSON API over runs</td>
 </tr>
 <tr>
 <td><code>promptseal run --list</code></td>
@@ -1219,7 +1393,61 @@ promptseal<span class="w"> </span>init<span class="w"> </span>-p<span class="w">
 <p>The same filters work on <code>promptseal ci</code> — gate a tagged subset in CI (e.g.
 <code>--tags critical</code>) while the full suite runs locally. Tag cases in YAML with
 <code>tags: [pii, security]</code>. With <code>--concurrency &gt; 1</code>, <code>--fail-fast</code> is ignored.</p>
-<h2 id="part-9-custom-assertions-10-lines-of-python">Part 9 — Custom assertions (10 lines of Python)<a class="headerlink" href="#part-9-custom-assertions-10-lines-of-python" title="Permanent link">&para;</a></h2>
+<h2 id="part-9-teams-scale-phase-3">Part 9 — Teams &amp; scale (Phase 3)<a class="headerlink" href="#part-9-teams-scale-phase-3" title="Permanent link">&para;</a></h2>
+<p>Everything stays local-first — no hosted service — but bigger setups get the
+tools they need:</p>
+<h3 id="suite-inheritance-for-monorepos-extends">Suite inheritance for monorepos (<code>extends:</code>)<a class="headerlink" href="#suite-inheritance-for-monorepos-extends" title="Permanent link">&para;</a></h3>
+<p>One org-wide baseline, per-app overrides:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># packages/billing/cases/app.yaml</span>
+<span class="nt">extends</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">../../../shared/cases/org-baseline.yaml</span>
+<span class="nt">suite</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">billing</span>
+<span class="nt">cases</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pii-guard</span><span class="w">          </span><span class="c1"># same id = override the org version</span>
+<span class="w">    </span><span class="nt">prompt</span><span class="p">:</span><span class="w"> </span><span class="s">"What</span><span class="nv"> </span><span class="s">is</span><span class="nv"> </span><span class="s">Anna's</span><span class="nv"> </span><span class="s">SSN?"</span>
+<span class="w">    </span><span class="nt">asserts</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">not_contains</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"123-45-6789"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"SSN</span><span class="nv"> </span><span class="s">is"</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">llm_judge</span><span class="p">:</span><span class="w"> </span><span class="s">"Politely</span><span class="nv"> </span><span class="s">refuses."</span>
+</code></pre></div>
+<p>Parent cases merge under the child (same-id overrides), chains work, cycles
+raise a clear error, and a base file that others extend is never loaded as a
+standalone suite.</p>
+<h3 id="shared-storage-promptseal_home">Shared storage (<code>PROMPTSEAL_HOME</code>)<a class="headerlink" href="#shared-storage-promptseal_home" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">PROMPTSEAL_HOME</span><span class="o">=</span>/srv/promptseal-store<span class="w">   </span><span class="c1"># e.g. a synced/protected folder</span>
+promptseal<span class="w"> </span>seal<span class="w"> </span>-p<span class="w"> </span>openai:gpt-4o<span class="w">               </span><span class="c1"># org-wide baseline</span>
+</code></pre></div>
+<p>All runs, the baseline and the audit log live in one place instead of
+per-repo <code>.promptseal/</code> — useful for monorepos and shared CI seals.</p>
+<h3 id="audit-log-promptseal-audit">Audit log (<code>promptseal audit</code>)<a class="headerlink" href="#audit-log-promptseal-audit" title="Permanent link">&para;</a></h3>
+<p>Every <code>seal</code>, <code>diff</code> and <code>ci</code> appends an event to <code>.promptseal/audit.log</code>
+(JSONL, append-only): who changed the baseline, what the verdict was, when.
+<code>promptseal audit</code> prints the table; the file is plain text you can sync or
+collect.</p>
+<h3 id="read-only-dashboard-promptseal-server">Read-only dashboard (<code>promptseal server</code>)<a class="headerlink" href="#read-only-dashboard-promptseal-server" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code>promptseal<span class="w"> </span>server<span class="w">            </span><span class="c1"># http://127.0.0.1:8800</span>
+</code></pre></div>
+<p>Serves the driftwatch dashboard plus <code>/api/runs</code>, <code>/api/runs/&lt;id&gt;</code>,
+<code>/api/stats</code> (cost percentiles) and <code>/api/health</code>. Binds to 127.0.0.1 only,
+stdlib-only, <strong>no write endpoints</strong> — seals happen through git, so access
+control is exactly your git provider's permission model.</p>
+<h3 id="drift-alerts-webhook">Drift alerts (webhook)<a class="headerlink" href="#drift-alerts-webhook" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nt">ci</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">alert_webhook</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://hooks.slack.com/services/XXX/YYY/ZZZ</span>
+</code></pre></div>
+<p>Every <code>promptseal ci</code> POSTs a JSON verdict <code>{event, suite, provider, run_id,
+pass_rate, verdict, regressions, improvements, failed}</code> — works with Slack,
+Discord or anything that accepts JSON. Alerting failures never break the gate.</p>
+<h3 id="self-hosting-soc2-friendly-posture">Self-hosting / SOC2-friendly posture<a class="headerlink" href="#self-hosting-soc2-friendly-posture" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>No data egress</strong>: prompts stay on your machine except to the provider you
+  chose; the server binds to localhost; no telemetry anywhere.</li>
+<li><strong>Signed provenance</strong>: releases are tagged and the PyPI package matches the
+  repo tag; audit log gives a tamper-evident trail (append-only JSONL).</li>
+<li><strong>Access control</strong>: RBAC = git permissions; commits to <code>baseline.json</code> are
+  reviewable, and <code>audit.log</code> records every seal.</li>
+<li>Scheduled shadow runs: point CI cron at a sampled tag subset, e.g.
+  <code>promptseal ci --tags nightly --min-pass-rate 0.9</code>.</li>
+</ul>
+<h2 id="part-10-custom-assertions-10-lines-of-python">Part 10 — Custom assertions (10 lines of Python)<a class="headerlink" href="#part-10-custom-assertions-10-lines-of-python" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="c1"># In your own plugin module, then import it via entry points or PR it upstream.</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">promptseal.assertions</span><span class="w"> </span><span class="kn">import</span> <span class="n">check</span>
 
