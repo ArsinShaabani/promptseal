@@ -121,6 +121,11 @@ The one-command regression loop for individual developers.
 > deep-merged provider config, filtered CI diffs, CHANGELOG, version-pinned
 > action + comment-on-failure.
 >
+> **Live now:** PyPI 0.8.0 (verified with a fresh-venv install) · GitHub Release
+> v0.8.0 · docs site https://arsinshaabani.github.io/promptseal/ (Pages:
+> legacy/gh-pages, `changelog/` page published) · promptseal-action v1.2.0
+> released and the `v1` tag moved to it.
+>
 > **Live now:** PyPI 0.6.0 (verified with a fresh-venv install) · GitHub Release
 > v0.6.0 · docs site https://arsinshaabani.github.io/promptseal/ (Pages:
 > legacy/gh-pages, build green) · promptseal-action v1.1.0 released and the
