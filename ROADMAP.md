@@ -124,7 +124,8 @@ The one-command regression loop for individual developers.
 > **Live now:** PyPI 0.8.0 (verified with a fresh-venv install) · GitHub Release
 > v0.8.0 · docs site https://arsinshaabani.github.io/promptseal/ (Pages:
 > legacy/gh-pages, `changelog/` page published) · promptseal-action v1.2.0
-> released and the `v1` tag moved to it.
+> released (comment-on-failure via `always()`, `version:` pin, `python_version`
+> validation, e2e smoke CI) and the `v1` tag moved to it.
 >
 > **Live now:** PyPI 0.6.0 (verified with a fresh-venv install) · GitHub Release
 > v0.6.0 · docs site https://arsinshaabani.github.io/promptseal/ (Pages:
