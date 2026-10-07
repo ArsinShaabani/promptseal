@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import random
 import time
 from dataclasses import dataclass
 from typing import Any, Optional, Protocol
@@ -15,6 +16,58 @@ from promptseal.config import AppConfig
 
 class ProviderError(Exception):
     pass
+
+
+def _is_retryable_status(status: int) -> bool:
+    return status == 429 or 500 <= status < 600
+
+
+def _request_with_retries(
+    method: str,
+    url: str,
+    *,
+    headers: Optional[dict[str, str]] = None,
+    json_body: Optional[dict[str, Any]] = None,
+    timeout_s: float = 60.0,
+    max_retries: int = 3,
+    backoff_s: float = 0.5,
+    label: str = "request",
+) -> httpx.Response:
+    """GET/POST with exponential backoff + jitter on 429/5xx and transport errors.
+
+    Non-retryable 4xx responses are returned immediately so the caller can turn
+    them into a precise error; transport failures and retryable statuses are
+    retried (total attempts = max_retries + 1).
+    """
+    attempts = max(0, int(max_retries)) + 1
+    last_exc: Optional[Exception] = None
+    resp: Optional[httpx.Response] = None
+    for attempt in range(attempts):
+        try:
+            # follow_redirects=False: 301/302 must surface as errors (a redirect
+            # would otherwise replay the request — possibly against a wrong host —
+            # and httpx follows them silently by opt-in only.
+            if method == "get":
+                resp = httpx.get(url, headers=headers, timeout=timeout_s, follow_redirects=False)
+            else:
+                resp = httpx.post(
+                    url, json=json_body, headers=headers, timeout=timeout_s, follow_redirects=False
+                )
+            last_exc = None
+        except httpx.HTTPError as exc:
+            resp = None
+            last_exc = exc
+        done = resp is not None and (
+            resp.status_code < 400 or not _is_retryable_status(resp.status_code)
+        )
+        if done or attempt >= attempts - 1:
+            break
+        delay = backoff_s * (2**attempt) * (0.5 + random.random())
+        if delay > 0:
+            time.sleep(delay)
+    if resp is not None:
+        return resp
+    raise ProviderError(f"{label} failed after {attempts} attempt(s): {last_exc}")
 
 
 @dataclass
@@ -40,6 +93,7 @@ class Provider(Protocol):
         messages: Optional[list[dict[str, Any]]] = None,
         tools: Optional[list[dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
+        params: Optional[dict[str, Any]] = None,
     ) -> Completion: ...
 
 
@@ -72,6 +126,7 @@ class MockProvider:
         messages: Optional[list[dict[str, Any]]] = None,
         tools: Optional[list[dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
+        params: Optional[dict[str, Any]] = None,
     ) -> Completion:
         time.sleep(0.005)  # simulate a tiny latency so reports look real
         if messages:
@@ -131,6 +186,8 @@ class OpenAICompatProvider:
         api_key: Optional[str] = None,
         timeout_s: float = 60.0,
         pricing: Optional[dict[str, float]] = None,
+        max_retries: int = 3,
+        retry_backoff_s: float = 0.5,
     ):
         self.name = name
         self.model = model
@@ -138,6 +195,8 @@ class OpenAICompatProvider:
         self.api_key = api_key
         self.timeout_s = timeout_s
         self.pricing = pricing or {}
+        self.max_retries = max_retries
+        self.retry_backoff_s = retry_backoff_s
 
     def _estimate_cost(self, usage: Optional[dict]) -> Optional[float]:
         if not usage or not self.pricing:
@@ -156,6 +215,7 @@ class OpenAICompatProvider:
         messages: Optional[list[dict[str, Any]]] = None,
         tools: Optional[list[dict[str, Any]]] = None,
         tool_choice: Optional[Any] = None,
+        params: Optional[dict[str, Any]] = None,
     ) -> Completion:
         chat: list[dict[str, Any]] = (
             list(messages)
@@ -175,15 +235,24 @@ class OpenAICompatProvider:
             payload["tools"] = tools
         if tool_choice is not None:
             payload["tool_choice"] = tool_choice
+        if params:
+            for key, value in params.items():
+                payload.setdefault(key, value)
         started = time.perf_counter()
         try:
-            response = httpx.post(
+            response = _request_with_retries(
+                "post",
                 f"{self.base_url}/chat/completions",
-                json=payload,
                 headers=headers,
-                timeout=self.timeout_s,
+                json_body=payload,
+                timeout_s=self.timeout_s,
+                max_retries=self.max_retries,
+                backoff_s=self.retry_backoff_s,
+                label=f"{self.name}:{self.model}",
             )
-        except httpx.HTTPError as exc:
+        except ProviderError:
+            raise
+        except Exception as exc:  # noqa: BLE001 — defensive: helpers must not leak raw errors
             raise ProviderError(f"{self.name}:{self.model} request failed: {exc}") from exc
         latency_ms = int((time.perf_counter() - started) * 1000)
 
@@ -235,4 +304,6 @@ def get_provider(spec: str, config: AppConfig) -> Provider:
         api_key=api_key,
         timeout_s=config.timeout_s,
         pricing=pconf.pricing,
+        max_retries=config.retry_attempts,
+        retry_backoff_s=config.retry_backoff_s,
     )

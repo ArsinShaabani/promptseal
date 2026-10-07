@@ -51,7 +51,8 @@ _CSS = """
 """
 
 _TEMPLATE = Template(
-    """<!DOCTYPE html>
+    autoescape=True,
+    source="""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -141,7 +142,8 @@ def render_html(run: Run, diff: DiffReport | None = None) -> str:
 
 
 _MATRIX_TEMPLATE = Template(
-    """<!DOCTYPE html>
+    autoescape=True,
+    source="""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">

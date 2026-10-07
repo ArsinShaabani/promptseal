@@ -19,6 +19,7 @@ nav:
   - Tutorial (EN): tutorial.md
   - آموزش (FA): tutorial.fa.md
   - Roadmap: roadmap.md
+  - Changelog: changelog.md
 
 markdown_extensions:
   - admonition

@@ -41,6 +41,7 @@ class ProviderConfig:
 @dataclass
 class JudgeConfig:
     provider: Optional[str] = None  # defaults to the run provider
+    params: dict[str, Any] = field(default_factory=dict)  # merged into judge requests
 
 
 @dataclass
@@ -60,6 +61,9 @@ class AppConfig:
     repeat: int = 1  # run each case N times (flaky detection)
     flaky_pass_rate: float = 1.0  # fraction of attempts that must pass, in (0, 1]
     concurrency: int = 1  # parallel case execution (1 = sequential)
+    retry_attempts: int = 3  # provider retries on 429/5xx (0 = no retries)
+    retry_backoff_s: float = 0.5  # base backoff seconds (exponential + jitter)
+    judge_cache: bool = True  # skip judge calls when an identical output was judged
     providers: dict[str, ProviderConfig] = field(default_factory=dict)
     judge: JudgeConfig = field(default_factory=JudgeConfig)
     ci: CIConfig = field(default_factory=CIConfig)
@@ -102,9 +106,20 @@ def load_config(path: Optional[Path] = None) -> AppConfig:
     cfg.concurrency = int(defaults.get("concurrency", cfg.concurrency))
     if cfg.concurrency < 1:
         raise ValueError("defaults.concurrency must be >= 1")
+    cfg.retry_attempts = int(defaults.get("retry_attempts", cfg.retry_attempts))
+    if cfg.retry_attempts < 0:
+        raise ValueError("defaults.retry_attempts must be >= 0")
+    cfg.retry_backoff_s = float(defaults.get("retry_backoff_s", cfg.retry_backoff_s))
+    if cfg.retry_backoff_s < 0:
+        raise ValueError("defaults.retry_backoff_s must be >= 0")
+    cfg.judge_cache = bool(defaults.get("judge_cache", cfg.judge_cache))
 
     providers_raw = raw.get("providers", {}) or {}
-    merged = {**DEFAULT_PROVIDERS, **providers_raw}
+    # Deep-merge: a user block only overrides the keys it sets, so redefining
+    # `openai: {api_key_env: X}` never drops the shipped base_url/pricing.
+    merged = dict(DEFAULT_PROVIDERS)
+    for name, pdata in (providers_raw or {}).items():
+        merged[name] = {**(merged.get(name) or {}), **(pdata or {})}
     for name, pdata in merged.items():
         pdata = pdata or {}
         cfg.providers[name] = ProviderConfig(
@@ -115,7 +130,13 @@ def load_config(path: Optional[Path] = None) -> AppConfig:
         )
 
     judge_raw = raw.get("judge", {}) or {}
-    cfg.judge = JudgeConfig(provider=judge_raw.get("provider"))
+    _judge_params = judge_raw.get("params") or {}
+    if not isinstance(_judge_params, dict):
+        raise ValueError("judge.params must be a mapping of model parameters")
+    cfg.judge = JudgeConfig(
+        provider=judge_raw.get("provider"),
+        params=dict(_judge_params),
+    )
 
     ci_raw = raw.get("ci", {}) or {}
     cfg.ci = CIConfig(

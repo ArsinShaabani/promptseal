@@ -28,6 +28,54 @@
 | `promptseal run --list` | لیست کیس‌های مچ‌شده بدون تماس با provider |
 | `promptseal run --tags pii` | اجرای فقط کیس‌های تگ‌دار |
 | `promptseal version` | نمایش نسخه |
+| `promptseal --version` | همین، به‌صورت فلگ سراسری |
+
+تاریخچه‌ی کامل تغییرات و چرایی‌شون: [CHANGELOG.md](CHANGELOG.md).
+
+---
+
+## قابلیت اطمینان و قطعیت (v0.8)
+
+سه تنظیم، ران‌ها رو هم قابل‌اعتماد و هم ارزون می‌کنن:
+
+```yaml
+defaults:
+  repeat: 5
+  flaky_pass_rate: 0.8
+  concurrency: 4          # کیس‌های موازی (ترتیب حفظ می‌شه)
+  retry_attempts: 3       # backoff و jitter روی 429/5xx + خطاهای شبکه
+  retry_backoff_s: 0.5
+  judge_cache: true       # استفاده‌ی مجدد از verdict های تکراری
+```
+
+پارامترهای passthrough بدون تغییر به مدل می‌رسن — بالاخره temperature کار می‌کنه:
+
+```yaml
+cases:
+  - id: deterministic-joke
+    prompt: "یک جوک کوتاه بگو."
+    params: {temperature: 0, max_tokens: 200}   # عیناً به مدل فرستاده می‌شه
+    asserts:
+      - max_length: 500
+
+  - id: creative-tagline
+    prompt: "یک شعار برای PromptSeal بساز."
+    params: {temperature: 0.9}
+```
+
+قطعیت قضاوت داور هم از همون‌جا میاد: مدل داور *و* پارامترهاش رو یک بار،
+در یک جا ثابت کن:
+
+```yaml
+defaults:
+  judge:
+    provider: openai:gpt-4o-mini
+    params: {temperature: 0}
+```
+
+پاسخ‌های داور با ورودی دقیق کش می‌شن (`.promptseal/judge-cache.json`)، پس
+اجراهای بعدی برای چیزهای قضاوت‌شده تماس پولی نمی‌زنن؛ برای verdict تازه
+`judge_cache: false` بذار.
 
 ---
 

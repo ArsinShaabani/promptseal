@@ -202,7 +202,8 @@ def _llm_judge(output: str, value: Any, ctx: CheckContext) -> tuple[bool, str]:
         answer = ctx.judge_fn(_JUDGE_SYSTEM, user)
     except Exception as exc:  # noqa: BLE001 — judge failures are assertion failures
         return False, f"judge call failed: {exc}"
-    first_line = answer.strip().splitlines()[0].strip().upper()
+    lines = answer.strip().splitlines()
+    first_line = lines[0].strip().upper() if lines else ""
     if first_line.startswith("PASS"):
         return True, answer.strip()
     if first_line.startswith("FAIL"):

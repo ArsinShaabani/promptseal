@@ -41,6 +41,8 @@ class Case(BaseModel):
     # Agent traces: OpenAI tool schemas forwarded to the provider.
     tools: Optional[list[dict[str, Any]]] = None
     tool_choice: Optional[Any] = None
+    # Extra model parameters (temperature, max_tokens, ...) sent verbatim.
+    params: Optional[dict[str, Any]] = None
     # Scripted-user simulation: after each assistant reply, inject the next user
     # turn from `script` and continue until the script is exhausted.
     script: Optional[list[str]] = None

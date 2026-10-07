@@ -692,7 +692,11 @@ def ci(
         console.print(f"[red]{exc}[/]")
         raise typer.Exit(2)
 
-    diff = diff_runs(base_run, run_result)
+    diff = diff_runs(
+        base_run,
+        run_result,
+        only_ids={r.case_id for r in run_result.results} if (tags or exclude_tags or only or skip) else None,
+    )
     console.print(report_mod.summary_markdown(run_result, diff))
 
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
@@ -736,7 +740,8 @@ def ci(
             "failed": failed,
         }
         try:
-            httpx.post(webhook, json=payload, timeout=10.0)
+            response = httpx.post(webhook, json=payload, timeout=10.0)
+            response.raise_for_status()
             console.print("   [dim]webhook alert sent.[/]")
         except Exception as exc:  # noqa: BLE001 — alerting must never break the gate
             console.print(f"[yellow]webhook alert failed: {exc}[/]")

@@ -90,6 +90,29 @@ class _ProxyHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def do_GET(self) -> None:  # noqa: N802 — stdlib naming
+        # OpenAI SDKs (and LangChain) hit /models on connect — answer locally so
+        # the proxy stays transparent for discovery calls.
+        path = self.path.split("?", 1)[0]
+        if path.rstrip("/").endswith("/models") or "/models/" in path:
+            upstream_url = self.server.upstream.rstrip("/") + "/models"  # type: ignore[attr-defined]
+            try:
+                resp = httpx.get(
+                    upstream_url,
+                    headers={"Accept": "application/json"},
+                    timeout=self.server.timeout_s,  # type: ignore[attr-defined]
+                )
+            except httpx.HTTPError as exc:
+                self._send(502, json.dumps({"error": {"message": f"upstream failed: {exc}"}}).encode())
+                return
+            if resp.status_code != 200:
+                models = {"object": "list", "data": [{"id": "promptseal-proxy", "object": "model"}]}
+                self._send(200, json.dumps(models).encode())
+                return
+            self._send(resp.status_code, resp.content, resp.headers.get("content-type", "application/json"))
+            return
+        self._send(404, json.dumps({"error": {"message": "promptseal recorder only handles /v1/chat/completions"}}).encode())
+
     def do_POST(self) -> None:  # noqa: N802 — stdlib naming
         length = int(self.headers.get("Content-Length", 0) or 0)
         raw = self.rfile.read(length)

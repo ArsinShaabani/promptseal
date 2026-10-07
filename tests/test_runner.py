@@ -112,7 +112,7 @@ class _FlakyProvider:
         self.outputs = outputs
         self.calls = 0
 
-    def complete(self, system=None, prompt="", *, messages=None, tools=None, tool_choice=None):
+    def complete(self, system=None, prompt="", *, messages=None, tools=None, tool_choice=None, params=None):
         text = self.outputs[self.calls % len(self.outputs)]
         self.calls += 1
         return Completion(

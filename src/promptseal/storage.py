@@ -51,7 +51,7 @@ def list_runs(root: Path | None = None) -> list[Run]:
             runs.append(load_run(path))
         except Exception:  # noqa: BLE001 — skip corrupt files
             continue
-    runs.sort(key=lambda r: r.meta.created_at, reverse=True)
+    runs.sort(key=lambda r: (r.meta.created_at, r.meta.run_id), reverse=True)
     return runs
 
 

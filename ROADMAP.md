@@ -115,6 +115,11 @@ The one-command regression loop for individual developers.
 > v0.7.0 — **Phase 3 features**: `extends:` suite inheritance, `PROMPTSEAL_HOME`
 > shared storage, `promptseal audit`, `promptseal server` (read-only local
 > dashboard/API), `ci.alert_webhook` drift alerts.
+> v0.8.0 — **Reliability & trust**: retries + jitter on 429/5xx, case-level
+> `params:` passthrough, deterministic `judge.params`, persisted judge-answer
+> cache, XSS-safe reports, honest webhooks, recorder `GET /v1/models`,
+> deep-merged provider config, filtered CI diffs, CHANGELOG, version-pinned
+> action + comment-on-failure.
 >
 > **Live now:** PyPI 0.6.0 (verified with a fresh-venv install) · GitHub Release
 > v0.6.0 · docs site https://arsinshaabani.github.io/promptseal/ (Pages:

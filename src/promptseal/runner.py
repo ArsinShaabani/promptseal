@@ -7,11 +7,13 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import json
 from pathlib import Path
 from typing import Any, Optional
 
 import yaml
 
+from promptseal import judge as judge_mod
 from promptseal._version import __version__
 from promptseal.assertions import CheckContext, JudgeFn, parse_asserts, run_asserts
 from promptseal.config import AppConfig
@@ -91,6 +93,7 @@ def load_suite_file(path: Path, _seen: Optional[frozenset] = None) -> Suite:
                 tools=rc.get("tools"),
                 tool_choice=rc.get("tool_choice"),
                 script=rc.get("script"),
+                params=rc.get("params"),
             )
         )
     name = raw.get("suite")
@@ -167,9 +170,9 @@ def _git_commit() -> Optional[str]:
     return None
 
 
-def _judge_fn(judge_provider: Provider) -> JudgeFn:
+def _judge_fn(judge_provider: Provider, judge_params=None) -> JudgeFn:
     def judge(system: str, user: str) -> str:
-        return judge_provider.complete(system, user).text
+        return judge_provider.complete(system, user, params=judge_params).text
 
     return judge
 
@@ -200,7 +203,10 @@ def _run_case_once(case: Case, provider: Provider, judge_fn: Optional[JudgeFn]) 
         tool_calls: Optional[list[dict[str, Any]]] = None
         for round_no in range(1 + len(script)):
             completion = provider.complete(
-                messages=chat, tools=case.tools, tool_choice=case.tool_choice
+                messages=chat,
+                tools=case.tools,
+                tool_choice=case.tool_choice,
+                params=case.params,
             )
             latency_ms += completion.latency_ms
             if completion.cost_usd is not None:
@@ -366,9 +372,13 @@ def execute(
         a.type == "llm_judge" for s in suites for c in s.cases for a in c.asserts
     )
     judge_fn = None
+    cache = None
     if needs_judge:
         judge_spec = config.judge.provider or spec
-        judge_fn = _judge_fn(get_provider(judge_spec, config))
+        judge_provider = get_provider(judge_spec, config)
+        cache_id = judge_spec + "::" + json.dumps(config.judge.params or {}, sort_keys=True)
+        cache = judge_mod.JudgeCache(cache_id, root=root, enabled=config.judge_cache)
+        judge_fn = cache.wrap(_judge_fn(judge_provider, config.judge.params or None))
 
     cases = [c for s in suites for c in s.cases]
     if not cases:
@@ -391,6 +401,8 @@ def execute(
         fail_fast=fail_fast,
         concurrency=conc,
     )
+    if cache is not None:
+        cache.persist()
     run.meta.run_id = storage.unique_run_id(run.meta.run_id, root)
     storage.save_run(run, root)
     return run

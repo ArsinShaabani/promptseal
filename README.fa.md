@@ -210,17 +210,16 @@ cases:
 
 ## وضعیت و نقشه‌راه
 
-`v0.7` — حلقه‌ی اصلی (`init`/`run`/`seal`/`diff`/`report`/`runs`/`ci`)، ۱۸ assertion،
-provider های ماک + سازگار با OpenAI، **مقایسه‌ی ماتریسی چندمدلی**، ضبط ترافیک
-(`record`)، خروجی JSON، گزارش HTML و گیت GitHub Actions + **baseline های commit شدنی
-و مستقل**، **تشخیص flaky با `--repeat`**، **SDK ی `promptseal.capture`**،
-**پلاگین pytest (`pytest --promptseal`)**، **کیس‌های agent-native** (`tools:` +
-`messages:` + اسکریپت `script:`)، **آداپترهای فریم‌ورک (`promptseal.adapters`)**،
-**`promptseal driftwatch`** با **درصدآخر هزینه هر کیس**، **`promptseal doctor`**،
-**فیلترهای کیس و کنترل اجرا** (`--tags/--case/--list/--fail-fast/--concurrency`)
-و **ویژگی‌های تیمی فاز ۳**: وراثت `extends:`، ‏`$PROMPTSEAL_HOME`،
-`promptseal audit`، ‏`promptseal server` و هشدار `ci.alert_webhook`.
-نقشه‌راه کامل: [ROADMAP.md](ROADMAP.md)
+`v0.8` — همه‌ی امکانات v0.7، به‌علاوه‌ی **قابلیت اطمینان و اعتماد**: retry با
+backoff نمایی + jitter روی 429/5xx، ‏`params:` در سطح کیس (temperature، ‏
+max_tokens و...) که مستقیم به مدل می‌رسه، ‏`judge.params` قطعی، **کش پاسخ‌های
+داور** (اجراهای بعدی تماس پولی رو رد می‌کنن)، گزارش‌های HTML امن در برابر XSS،
+هشدارهای webhook صادق (non-2xx با صدای بلند fail می‌شه)، پشتیبانی recorder از
+‏`GET /v1/models`، کانفیگ provider با deep-merge، diff فیلترشده در CI،
+‏**CHANGELOG.md** رسمی و اکشن گیت‌هاب با نسخه‌ی پین‌شده که کامنت PR رو هنگام
+شکست گیت هم می‌ذاره.
+مستندات دولبله: [English](README.md) | [فارسی](README.fa.md).
+نقشه‌راه کامل: [ROADMAP.md](ROADMAP.md) و [CHANGELOG.md](CHANGELOG.md).
 
 ## مشارکت
 

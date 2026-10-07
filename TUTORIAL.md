@@ -27,6 +27,54 @@
 | `promptseal run --list` | List matching cases without calling the provider |
 | `promptseal run --tags pii` | Run only cases carrying a tag |
 | `promptseal version` | Show version |
+| `promptseal --version` | Same, as a global flag |
+
+Full history of what changed and why: [CHANGELOG.md](CHANGELOG.md).
+
+---
+
+## Reliability & determinism (v0.8)
+
+Three settings make runs trustworthy *and* cheap:
+
+```yaml
+defaults:
+  repeat: 5
+  flaky_pass_rate: 0.8
+  concurrency: 4          # parallel cases (order preserved)
+  retry_attempts: 3       # backoff+jitter on 429/5xx + transport errors
+  retry_backoff_s: 0.5
+  judge_cache: true       # reuse identical judge verdicts across reruns
+```
+
+Pass-through parameters reach the model verbatim — temperature finally works:
+
+```yaml
+cases:
+  - id: deterministic-joke
+    prompt: "Tell me a short joke."
+    params: {temperature: 0, max_tokens: 200}   # sent to the model as-is
+    asserts:
+      - max_length: 500
+
+  - id: creative-tagline
+    prompt: "Invent a tagline for PromptSeal."
+    params: {temperature: 0.9}
+```
+
+Judge determinism comes from the same place: fix the judge model *and* its
+params once, in one spot:
+
+```yaml
+defaults:
+  judge:
+    provider: openai:gpt-4o-mini
+    params: {temperature: 0}
+```
+
+Judge answers are cached by exact input (`.promptseal/judge-cache.json`), so
+reruns skip paid calls for anything already judged; set
+`judge_cache: false` to force fresh verdicts.
 
 ---
 

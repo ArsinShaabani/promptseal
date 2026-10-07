@@ -158,6 +158,16 @@ def _stats_section(runs: list[Run]) -> str:
 
 
 def render_html(runs: list[Run], generated_at: str = "") -> str:
+    if not runs:
+        return (
+            '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
+            "<title>PromptSeal driftwatch</title>"
+            f"<style>{_CSS}</style></head><body>"
+            '<div class="wrap"><h1>🦭 PromptSeal — driftwatch</h1>'
+            '<div class="sub">No runs yet — run `promptseal run` first.</div>'
+            "</div></body></html>"
+        )
+    groups: dict[str, list[Run]] = {}
     groups: dict[str, list[Run]] = {}
     for r in sorted(runs, key=lambda r: r.meta.created_at):
         groups.setdefault(f"{r.meta.provider}:{r.meta.model}", []).append(r)

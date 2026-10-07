@@ -12,9 +12,14 @@ defaults:
   # Start offline with the deterministic mock provider:
   provider: mock:echo
   timeout_s: 60
+  # Reliability: retries with backoff+jitter on 429/5xx, cached judge verdicts.
+  retry_attempts: 3
+  retry_backoff_s: 0.5
+  judge_cache: true
   judge:
     # Used by llm_judge assertions. Defaults to the run provider if unset.
     # provider: openai:gpt-4o-mini
+    # params: {temperature: 0}   # fixed judge params (merged into judge requests)
 
 providers:
   openai:

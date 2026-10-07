@@ -32,6 +32,15 @@ Thumbs.db
 # Internal marketing drafts (kept local only)
 marketing/
 
+# Docs-site build inputs (kept local only; sources are the
+# repo-root docs files and the site is rebuilt on every deploy)
+docs/roadmap.md
+docs/tutorial.md
+docs/tutorial.fa.md
+docs/changelog.md
+docs/index.md
+mkdocs.yml
+
 # Release tooling (local only)
 scripts/create_release.ps1
 scripts/pypi_upload.ps1

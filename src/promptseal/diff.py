@@ -26,9 +26,17 @@ class DiffReport:
         return len(self.regressions) > 0
 
 
-def diff_runs(baseline: Run, candidate: Run) -> DiffReport:
+def diff_runs(baseline: Run, candidate: Run, only_ids=None) -> DiffReport:
+    """Compare baseline vs candidate. With only_ids, ignore every other case id.
+
+    Used by filtered CI runs (--tags/--case/...): baseline-only cases disappear
+    from missing_cases instead of showing up as noise next to the real verdict.
+    """
     base_results = {r.case_id: r for r in baseline.results}
     cand_results = {r.case_id: r for r in candidate.results}
+    if only_ids is not None:
+        base_results = {k: v for k, v in base_results.items() if k in only_ids}
+        cand_results = {k: v for k, v in cand_results.items() if k in only_ids}
 
     report = DiffReport(
         baseline_run_id=baseline.meta.run_id,

@@ -8,18 +8,20 @@ a single PromptSeal run in `.promptseal/runs/`, so `promptseal seal` / `diff` /
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
 
 from promptseal import assertions
+from promptseal import judge as judge_mod
+from promptseal import storage
 from promptseal._version import __version__
 from promptseal.config import AppConfig, find_config, load_config
 from promptseal.models import Case, CaseResult, Run, RunMeta, RunSummary
 from promptseal.providers import Provider, ProviderError, get_provider
 from promptseal.runner import _git_commit, _judge_fn, _run_case_once, load_suite_file
-from promptseal import storage
 
 
 class PromptSealFailure(AssertionError):
@@ -90,7 +92,20 @@ class PromptSealItem(pytest.Item):
         judge_fn = config._ps_judge
         if judge_fn is None and any(a.type == "llm_judge" for a in self.case.asserts):
             judge_spec = config._ps_config.judge.provider or f"{provider.name}:{provider.model}"
-            judge_fn = _judge_fn(get_provider(judge_spec, config._ps_config))
+            try:
+                judge_provider = get_provider(judge_spec, config._ps_config)
+            except ProviderError as exc:
+                result = CaseResult(case_id=self.case.id, status="error", error=str(exc))
+                config._ps_results.append(result)
+                raise PromptSealFailure(f"[promptseal] case '{self.case.id}' judge setup failed: {exc}")
+            cache = getattr(config, "_ps_judge_cache", None)
+            if cache is None:
+                cache_id = judge_spec + "::" + json.dumps(config._ps_config.judge.params or {}, sort_keys=True)
+                cache = judge_mod.JudgeCache(cache_id, root=Path.cwd(), enabled=config._ps_config.judge_cache)
+                config._ps_judge_cache = cache
+            judge_fn = cache.wrap(
+                _judge_fn(judge_provider, config._ps_config.judge.params or None)
+            )
             config._ps_judge = judge_fn
         try:
             result = _run_case_once(self.case, provider, judge_fn)
@@ -130,6 +145,9 @@ def _persist_run(config) -> None:
     results: list[CaseResult] = getattr(config, "_ps_results", None) or []
     if not results:
         return
+    cache = getattr(config, "_ps_judge_cache", None)
+    if cache is not None:
+        cache.persist()
     provider: Provider = config._ps_provider
     total = len(results)
     passed = sum(1 for r in results if r.status == "pass")

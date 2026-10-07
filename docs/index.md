@@ -38,6 +38,8 @@ That's the whole loop: **describe → seal → change something → diff.**
 - 🎥 **Capture reality** — local proxy (`record`) or the in-process
   `promptseal.capture` SDK turn real traffic into cases
 - 🧪 **pytest plugin** — `pytest --promptseal` runs evals next to your unit tests
+- 🦭 **v0.8: reliability & trust** — retries with backoff, `params:` passthrough,
+  judge cache, XSS-safe reports, [CHANGELOG](https://github.com/ArsinShaabani/promptseal/blob/main/CHANGELOG.md)
 - 📦 **Local-first** — plain JSON runs, no server, no account, no telemetry
 
 ## Links
